@@ -57,6 +57,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true } // Adds createdAt and updatedAt fields
 );
 
+
 // Pre-save hook to handle password hashing
 userSchema.pre('save', async function (next) {
   const user = this;
