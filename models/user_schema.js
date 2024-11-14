@@ -2,13 +2,14 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
 // Enums for user type and current role
-export const UserTypeEnum = {
+ const UserTypeEnum = {
   TEACHER: 'teacher',
   ADMIN: 'admin',
   STUDENT: 'student',
+  VOLENTEER: 'volunteer'
 };
 
-export const CurrentRoleEnum = {
+ const CurrentRoleEnum = {
   STUDENT: 'student',
   WORKING_PROFESSIONAL: 'working professional',
 };
