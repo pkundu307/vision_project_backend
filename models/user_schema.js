@@ -1,15 +1,14 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
-// Enums for user type and current role
- const UserTypeEnum = {
+export const UserTypeEnum = {
   TEACHER: 'teacher',
   ADMIN: 'admin',
   STUDENT: 'student',
   VOLENTEER: 'volunteer'
 };
 
- const CurrentRoleEnum = {
+export const CurrentRoleEnum = {
   STUDENT: 'student',
   WORKING_PROFESSIONAL: 'working professional',
 };
@@ -30,41 +29,49 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
-    collegeName: {
+    name: {
       type: String,
       required: true,
+      trim: true,
+    },
+    collegeName: {
+      type: String,
+      required: false,
     },
     passoutYear: {
       type: Number,
-      required: true,
+      required: false,
       min: 1900,
-      max: new Date().getFullYear() + 10, // Allows for future passout years up to 10 years ahead
+      max: new Date().getFullYear() + 10,
     },
     cv: {
-      type: String, // Assuming this is a URL to the CV file
+      type: String,
       required: false,
     },
     userType: {
       type: String,
       enum: Object.values(UserTypeEnum),
-      required: true,
+      default:'student',
+      required: false,
     },
     currentRole: {
       type: String,
       enum: Object.values(CurrentRoleEnum),
-      required: true,
+      required: false,
+    },
+    otp_verified: {
+      type: Boolean,
+      default: false,
     },
   },
-  { timestamps: true } // Adds createdAt and updatedAt fields
+  { timestamps: true }
 );
-
 
 // Pre-save hook to handle password hashing
 userSchema.pre('save', async function (next) {
-  const user = this;
-  if (user.isModified('password')) {
+  if (this.isModified('password')) {
     const saltRounds = 10;
-    user.password = await bcrypt.hash(user.password, saltRounds);
+    this.password = await bcrypt.hash(this.password, saltRounds);
   }
   next();
 });
@@ -74,5 +81,4 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Export the model and enums
 export const UserModel = mongoose.model('User', userSchema);

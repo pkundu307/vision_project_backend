@@ -1,27 +1,20 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { UserModel, UserTypeEnum, CurrentRoleEnum } from '../models/user_schema.js';
+import nodemailer from 'nodemailer';
 
 // Helper function to generate JWT token
 const generateToken = (userId, userType) => {
   const payload = { userId, userType };
-  return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '1h' }); // Token expires in 1 hour
+  return jwt.sign(payload, "pkpkpkpkpkpkpkpkpkpkpk", { expiresIn: '90h' }); 
 };
 
 // Register Controller
+
 export const register = async (req, res) => {
-  const { email, password, collegeName, passoutYear, cv, userType, currentRole } = req.body;
+  const { email, password, name } = req.body;
 
   try {
-    // Validate user type and current role
-    if (!Object.values(UserTypeEnum).includes(userType)) {
-      return res.status(400).json({ message: 'Invalid user type' });
-    }
-
-    if (!Object.values(CurrentRoleEnum).includes(currentRole)) {
-      return res.status(400).json({ message: 'Invalid current role' });
-    }
-
     // Check if email already exists
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
@@ -32,19 +25,40 @@ export const register = async (req, res) => {
     const newUser = new UserModel({
       email,
       password,
-      collegeName,
-      passoutYear,
-      cv,
-      userType,
-      currentRole,
+      name,
+      otp_verified: false, // Default to not verified
     });
 
     // Save the new user
     await newUser.save();
 
+    // Send a welcome email with nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'your-email@gmail.com', // Replace with your email
+        pass: 'your-email-password',  // Replace with your email password or an app-specific password
+      },
+    });
+
+    const mailOptions = {
+      from: 'your-email@gmail.com',
+      to: email,
+      subject: 'Welcome to Our Service!',
+      text: `Hello ${name},\n\nWelcome! Thank you for registering with us.\n\nBest regards,\nYour Team`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+      } else {
+        console.log('Email sent:', info.response);
+      }
+    });
+
     return res.status(201).json({
-      message: 'User registered successfully!',
-      user: { email, collegeName, userType, currentRole }
+      message: 'User registered successfully! Please verify your email.',
+      user: { email, name, otp_verified: false }
     });
 
   } catch (error) {
@@ -86,6 +100,7 @@ export const login = async (req, res) => {
         collegeName: user.collegeName,
         userType: user.userType,
         currentRole: user.currentRole,
+        name: user.name
       }
     });
 
