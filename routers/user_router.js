@@ -1,8 +1,8 @@
-import { login, register } from "../controllers/userController.js";
+import { login, register } from "../controllers/user.controller.js";
 import authenticateUser from "../middleware/authenticate.js";
 
 import express from "express";
-import { UserModel } from "../models/user_schema.js";
+import { UserModel } from "../models/user.schema.js";
 
 const router = express.Router();
 

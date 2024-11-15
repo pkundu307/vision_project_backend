@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { UserModel, UserTypeEnum, CurrentRoleEnum } from '../models/user_schema.js';
+import { UserModel, UserTypeEnum, CurrentRoleEnum } from '../models/user.schema.js';
 import nodemailer from 'nodemailer';
 
 // Helper function to generate JWT token
