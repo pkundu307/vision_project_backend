@@ -3,17 +3,29 @@ import { OrganizationModel } from "../models/organization.schema";
 import { OrganizationModel } from '../models/organizationModel.js'; // Adjust path as necessary
 
 // Controller to create a new organization
-export const createOrganization = async (req, res) => {
-  const { name, description, address, contactEmail, contactPhone, website, establishedYear, logo } = req.body;
+import { OrganizationModel } from '../models/organization.js'; // Adjust the path based on your file structure
 
+export const createOrganization = async (req, res) => {
   try {
-    // Check if an organization with the same name already exists
-    const existingOrg = await OrganizationModel.findOne({ name });
-    if (existingOrg) {
-      return res.status(400).json({ message: 'Organization with this name already exists.' });
+    const {
+      name,
+      description,
+      address,
+      contactEmail,
+      contactPhone,
+      website,
+      coursesOffered,
+      administrators,
+      establishedYear,
+      logo,
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !description || !address || !contactEmail || !contactPhone) {
+      return res.status(400).json({ message: 'All required fields must be provided.' });
     }
 
-    // Create a new organization document
+    // Create the organization
     const organization = new OrganizationModel({
       name,
       description,
@@ -21,16 +33,25 @@ export const createOrganization = async (req, res) => {
       contactEmail,
       contactPhone,
       website,
+      coursesOffered,
+      administrators,
       establishedYear,
       logo,
     });
 
     // Save the organization to the database
     const savedOrganization = await organization.save();
-    res.status(201).json({ message: 'Organization created successfully.', organization: savedOrganization });
+
+    return res.status(201).json({
+      message: 'Organization created successfully.',
+      organization: savedOrganization,
+    });
   } catch (error) {
     console.error('Error creating organization:', error);
-    res.status(500).json({ message: 'Failed to create organization.', error });
+    return res.status(500).json({
+      message: 'An error occurred while creating the organization.',
+      error: error.message,
+    });
   }
 };
 
