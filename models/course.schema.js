@@ -43,6 +43,7 @@ const courseSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Organization',
       required: true,
+      index: true, // Add index
     },
     enrollmentLimit: {
       type: Number,
@@ -78,6 +79,12 @@ const courseSchema = new mongoose.Schema(
     },
     category: {
       type: String,
+      required: true,
+      enum: ['Math', 'Science', 'Technology', 'Arts'],
+    },
+    chatRoom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ChatRoom',
       required: true,
     },
   },

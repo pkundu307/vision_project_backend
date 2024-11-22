@@ -2,18 +2,27 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import { Server } from "socket.io";
 import bodyParser from 'body-parser';
+import http from "http";
 import userRouter from './routers/user_router.js';
 // import adminRouter from './routers/admin.route.js';
 import organizationRouter from './routers/organization.route.js';
+import courseRouter from './routers/course.route.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = 5000;
+const server = http.createServer(app);
 const MONGO_URI = process.env.MONGO_URI;
-
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Replace with your frontend's URL in production
+    methods: ["GET", "POST"],
+  },
+});
 // Middleware
 app.use(cors()); // Enable CORS
 app.use(express.json()); // Parse JSON bodies
@@ -26,6 +35,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', userRouter);
 app.use('/api/organization', organizationRouter);
+app.use('/api/course', courseRouter);
 
 // MongoDB Connection
 mongoose

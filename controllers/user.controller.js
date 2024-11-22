@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { UserModel, UserTypeEnum, CurrentRoleEnum } from '../models/user.schema.js';
 import nodemailer from 'nodemailer';
 import { OrganizationModel } from '../models/organization.schema.js';
+import { CourseModel } from '../models/course.schema.js';
 
 // Helper function to generate JWT token
 const generateToken = (userId, userType) => {
@@ -78,13 +79,21 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    // Check for regular user
+    // Check for regular user (student or teacher)
     const user = await UserModel.findOne({ email });
     if (user) {
       // Compare the password with the stored hashed password
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
         return res.status(400).json({ message: "Invalid email or password" });
+      }
+
+      // Retrieve the courses the user is enrolled in (if student) or instructing (if teacher)
+      let courses = [];
+      if (user.userType === "student") {
+        courses = await CourseModel.find({ enrolledStudents: user._id }).populate("organization", "name");
+      } else if (user.userType === "teacher") {
+        courses = await CourseModel.find({ instructors: user._id }).populate("organization", "name");
       }
 
       // Generate JWT token for user
@@ -95,18 +104,23 @@ export const login = async (req, res) => {
         token,
         user: {
           email: user.email,
-          collegeName: user.collegeName,
+          name: user.name,
           userType: user.userType,
           currentRole: user.currentRole,
-          name: user.name,
+          collegeName: user.collegeName,
         },
+        courses: courses.map((course) => ({
+          courseName: course.courseName,
+          description: course.description,
+          startDate: course.startDate,
+          endDate: course.endDate,
+          organization: course.organization.name,
+        })),
       });
     }
 
     // If not a regular user, check for admin in the Organization schema
-    const organization = await OrganizationModel.findOne({
-      contactEmail: email,
-    });
+    const organization = await OrganizationModel.findOne({ contactEmail: email });
 
     if (organization) {
       // Compare the password with the stored hashed password
@@ -121,12 +135,13 @@ export const login = async (req, res) => {
       return res.status(200).json({
         message: "Admin login successful",
         token,
-        admin: {
+        user: {
           email: organization.contactEmail,
           name: organization.adminName,
           organizationName: organization.name,
+          userType: "admin",
+          organizationId: organization._id,
         },
-        userType:"admin"
       });
     }
 
