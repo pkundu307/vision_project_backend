@@ -1,9 +1,5 @@
-import { OrganizationModel } from "../models/organization.schema";
+import { OrganizationModel } from "../models/organization.schema.js";
 
-import { OrganizationModel } from '../models/organizationModel.js'; // Adjust path as necessary
-
-// Controller to create a new organization
-import { OrganizationModel } from '../models/organization.js'; // Adjust the path based on your file structure
 
 export const createOrganization = async (req, res) => {
   try {
@@ -18,11 +14,21 @@ export const createOrganization = async (req, res) => {
       administrators,
       establishedYear,
       logo,
+      adminName,
+      adminPassword, // New fields for admin
     } = req.body;
 
     // Validate required fields
-    if (!name || !description || !address || !contactEmail || !contactPhone) {
-      return res.status(400).json({ message: 'All required fields must be provided.' });
+    if (
+      !name ||
+      !description ||
+      !address ||
+      !contactEmail ||
+      !contactPhone ||
+      !adminName ||
+      !adminPassword // Ensure admin credentials are provided
+    ) {
+      return res.status(400).json({ message: "All required fields must be provided." });
     }
 
     // Create the organization
@@ -37,19 +43,21 @@ export const createOrganization = async (req, res) => {
       administrators,
       establishedYear,
       logo,
+      adminName,
+      adminPassword, // Include admin credentials
     });
 
     // Save the organization to the database
     const savedOrganization = await organization.save();
 
     return res.status(201).json({
-      message: 'Organization created successfully.',
+      message: "Organization created successfully.",
       organization: savedOrganization,
     });
   } catch (error) {
-    console.error('Error creating organization:', error);
+    console.error("Error creating organization:", error);
     return res.status(500).json({
-      message: 'An error occurred while creating the organization.',
+      message: "An error occurred while creating the organization.",
       error: error.message,
     });
   }

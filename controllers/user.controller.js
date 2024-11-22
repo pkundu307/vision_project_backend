@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { UserModel, UserTypeEnum, CurrentRoleEnum } from '../models/user.schema.js';
 import nodemailer from 'nodemailer';
+import { OrganizationModel } from '../models/organization.schema.js';
 
 // Helper function to generate JWT token
 const generateToken = (userId, userType) => {
@@ -74,38 +75,65 @@ export const login = async (req, res) => {
   try {
     // Validate email and password
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
-    // Find the user by email
+    // Check for regular user
     const user = await UserModel.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
-
-    // Compare the password with the stored hashed password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
-
-    // Generate JWT token
-    const token = generateToken(user._id, user.userType);
-
-    return res.status(200).json({
-      message: 'Login successful',
-      token,
-      user: {
-        email: user.email,
-        collegeName: user.collegeName,
-        userType: user.userType,
-        currentRole: user.currentRole,
-        name: user.name
+    if (user) {
+      // Compare the password with the stored hashed password
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Invalid email or password" });
       }
+
+      // Generate JWT token for user
+      const token = generateToken(user._id, user.userType);
+
+      return res.status(200).json({
+        message: "Login successful",
+        token,
+        user: {
+          email: user.email,
+          collegeName: user.collegeName,
+          userType: user.userType,
+          currentRole: user.currentRole,
+          name: user.name,
+        },
+      });
+    }
+
+    // If not a regular user, check for admin in the Organization schema
+    const organization = await OrganizationModel.findOne({
+      contactEmail: email,
     });
 
+    if (organization) {
+      // Compare the password with the stored hashed password
+      const isMatch = await organization.comparePassword(password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Invalid email or password" });
+      }
+
+      // Generate JWT token for admin
+      const token = generateToken(organization._id, "admin");
+
+      return res.status(200).json({
+        message: "Admin login successful",
+        token,
+        admin: {
+          email: organization.contactEmail,
+          name: organization.adminName,
+          organizationName: organization.name,
+        },
+        userType:"admin"
+      });
+    }
+
+    // If neither user nor admin is found
+    return res.status(400).json({ message: "Invalid email or password" });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: "Server error" });
   }
 };

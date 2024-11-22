@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import userRouter from './routers/user_router.js';
+// import adminRouter from './routers/admin.route.js';
+import organizationRouter from './routers/organization.route.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +25,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', userRouter);
+app.use('/api/organization', organizationRouter);
 
 // MongoDB Connection
 mongoose
