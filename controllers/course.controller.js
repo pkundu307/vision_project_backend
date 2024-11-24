@@ -3,7 +3,12 @@ import { CourseModel } from "../models/course.schema.js";
 import { OrganizationModel } from "../models/organization.schema.js";
 import { UserModel } from "../models/user.schema.js";
 import { ChatRoomModel } from "../models/chatRoom.schema.js";
-// import {io} from "socket.io"
+import { io } from "../index.js";
+
+// 'server' is your HTTP server instance
+
+import bcrypt from "bcrypt";
+
 
 export const createCourse = async (req, res) => {
     try {
@@ -116,10 +121,10 @@ export const addTrainerToCourse = async (req, res) => {
     let trainer = await UserModel.findOne({ email });
     if (!trainer) {
       const defaultPassword = "trainer123";
-      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+      
       trainer = new UserModel({
         email,
-        password: hashedPassword,
+        password: defaultPassword,
         name,
         userType: "teacher",
       });

@@ -1,4 +1,4 @@
-import { login, register } from "../controllers/user.controller.js";
+import { getCoursesByUserId, login, register } from "../controllers/user.controller.js";
 import authenticateUser from "../middleware/authenticate.js";
 
 import express from "express";
@@ -36,5 +36,6 @@ router.get('/user/details', authenticateUser, async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 });
+router.get('/user/courses/:userId',getCoursesByUserId);
 
 export default router;

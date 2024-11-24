@@ -72,6 +72,8 @@ export const register = async (req, res) => {
 // Login Controller
 export const login = async (req, res) => {
   const { email, password } = req.body;
+  console.log(email, password);
+  
 
   try {
     // Validate email and password
@@ -82,6 +84,8 @@ export const login = async (req, res) => {
     // Check for regular user (student or teacher)
     const user = await UserModel.findOne({ email });
     if (user) {
+      console.log(user);
+      
       // Compare the password with the stored hashed password
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
@@ -103,6 +107,7 @@ export const login = async (req, res) => {
         message: "Login successful",
         token,
         user: {
+          id:user._id,
           email: user.email,
           name: user.name,
           userType: user.userType,
@@ -150,5 +155,36 @@ export const login = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const getCoursesByUserId = async (req, res) => {
+  const { userId } = req.params;
+  
+  try {
+    // Find the user to check their type
+    const user = await UserModel.findById(userId);
+    
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let courses;
+    if (user.userType === 'student') {
+      // Find courses where the user is enrolled
+      courses = await CourseModel.find({ enrolledStudents: userId }).populate('instructors organization chatRoom');
+    } else if (user.userType === 'teacher') {
+      // Find courses where the user is an instructor
+      courses = await CourseModel.find({ instructors: userId }).populate('enrolledStudents organization chatRoom');
+    } else {
+      return res.status(400).json({ message: 'Invalid user type for this action' });
+    }
+
+    res.status(200).json(courses);
+  } catch (error) {
+    console.error('Error fetching courses:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };

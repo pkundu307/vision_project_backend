@@ -23,6 +23,9 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
+
+export { io };
+
 // Middleware
 app.use(cors()); // Enable CORS
 app.use(express.json()); // Parse JSON bodies
