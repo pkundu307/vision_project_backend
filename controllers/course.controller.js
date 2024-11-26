@@ -265,3 +265,29 @@ export const addStudentToCourse = async (req, res) => {
     }
   };
   
+
+
+// Controller function to get chat room ID by course ID
+export const getChatRoomByCourseId = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    
+    // Find the course by ID
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    // Find the chat room associated with the course
+    const chatRoom = await ChatRoomModel.findOne({ course: course._id });
+    if (!chatRoom) {
+      return res.status(404).json({ message: 'Chat room not found' });
+    }
+    
+    // Respond with the chat room ID
+    res.status(200).json({ chatRoomId: chatRoom._id });
+  } catch (error) {
+    console.error('Error fetching chat room:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
