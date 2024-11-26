@@ -44,10 +44,12 @@ const userSchema = new mongoose.Schema(
       min: 1900,
       max: new Date().getFullYear() + 10,
     },
-    enrolledCourses: {
-      type: [String],
-      required: false,
-    },    
+    enrolledCourses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course', // Reference the Course model
+      },
+    ], 
     cv: {
       type: String,
       required: false,

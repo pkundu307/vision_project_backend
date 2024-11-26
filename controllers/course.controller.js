@@ -130,7 +130,8 @@ export const addTrainerToCourse = async (req, res) => {
       });
       await trainer.save();
     }
-
+    trainer.enrolledCourses.push(courseId)
+    await trainer.save();
     if (!course.instructors.includes(trainer._id)) {
       course.instructors.push(trainer._id);
       await course.save();
@@ -194,8 +195,11 @@ export const addStudentToCourse = async (req, res) => {
           name,
           userType: "student",
         });
+
+        student.enrolledCourses.push(courseId)
         await student.save();
       }
+
   
       if (!course.enrolledStudents.includes(student._id)) {
         course.enrolledStudents.push(student._id);
@@ -223,6 +227,39 @@ export const addStudentToCourse = async (req, res) => {
       console.error("Error adding student:", error);
       return res.status(500).json({
         message: "An error occurred while adding the student",
+        error: error.message,
+      });
+    }
+  };
+  
+  export const getEnrolledCoursesByid = async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      // Fetch the student from the database
+      const student = await UserModel.findById(id).populate({
+        path: "enrolledCourses", // Populate enrolled courses
+        model: "Course", // Refers to the CourseModel
+        select: "courseName description duration startDate endDate fee", // Select only specific fields
+      });
+  
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+  
+      // Check if the student has any enrolled courses
+      if (!student.enrolledCourses || student.enrolledCourses.length === 0) {
+        return res.status(200).json({ message: "No enrolled courses found", courses: [] });
+      }
+  
+      return res.status(200).json({
+        message: "Enrolled courses retrieved successfully",
+        courses: student.enrolledCourses,
+      });
+    } catch (error) {
+      console.error("Error fetching enrolled courses:", error);
+      return res.status(500).json({
+        message: "An error occurred while fetching the enrolled courses",
         error: error.message,
       });
     }

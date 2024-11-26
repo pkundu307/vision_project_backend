@@ -126,6 +126,8 @@ export const login = async (req, res) => {
 
     // If not a regular user, check for admin in the Organization schema
     const organization = await OrganizationModel.findOne({ contactEmail: email });
+    console.log(organization);
+    
 
     if (organization) {
       // Compare the password with the stored hashed password
