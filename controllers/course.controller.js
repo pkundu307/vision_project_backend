@@ -188,10 +188,9 @@ export const addStudentToCourse = async (req, res) => {
       let student = await UserModel.findOne({ email });
       if (!student) {
         const defaultPassword = "student123";
-        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
         student = new UserModel({
           email,
-          password: hashedPassword,
+          password: defaultPassword,
           name,
           userType: "student",
         });

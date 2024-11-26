@@ -39,6 +39,10 @@ const courseSchema = new mongoose.Schema(
         required: true,
       },
     ],
+    is_active:{
+      type: Boolean,
+      default: true, 
+    },
     organization: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Organization',

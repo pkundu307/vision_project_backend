@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema(
       min: 1900,
       max: new Date().getFullYear() + 10,
     },
+    enrolledCourses: {
+      type: [String],
+      required: false,
+    },    
     cv: {
       type: String,
       required: false,

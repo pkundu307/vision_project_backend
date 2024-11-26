@@ -36,6 +36,6 @@ router.get('/user/details', authenticateUser, async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 });
-router.get('/user/courses/:userId',getCoursesByUserId);
+router.get('/user/courses',authenticateUser,getCoursesByUserId);
 
 export default router;

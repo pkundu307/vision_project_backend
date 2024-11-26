@@ -160,7 +160,7 @@ export const login = async (req, res) => {
 
 
 export const getCoursesByUserId = async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.user;
   
   try {
     // Find the user to check their type
