@@ -1,14 +1,14 @@
 import express from 'express';
 import {
-  getMessages,
   addUserToChatRoom,
   removeUserFromChatRoom,
+  getLastMessagesByChatRoom,
 } from '../controllers/chat.controller.js';
 
 const router = express.Router();
 
 // Get all messages for a chat room
-router.get('/:chatRoomId/messages', getMessages);
+router.get('/:chatRoomId/messages', getLastMessagesByChatRoom);
 
 // Add a user to a chat room
 router.post('/add-user', addUserToChatRoom);

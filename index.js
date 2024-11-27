@@ -70,7 +70,16 @@ io.on("connection", (socket) => {
    });
   
    // Handle incoming messages
-   socket.on("message", ({ room, name, text }) => {
+   socket.on("message",async ({ room, name, text }) => {
+   //store message in database
+
+   const message =new ChatMessageModel({
+     sender: name,
+     message: text,
+     chatRoom: room,
+   })
+   await message.save()
+
    console.log(`Message from ${name} in room ${room}: ${text}`);
    const newMessage = { name, text };
    io.to(room).emit("message", newMessage); // Emit the message to the room

@@ -5,21 +5,35 @@ import {ChatMessageModel} from "../models/chatmessage.schema.js"
 /**
  * Get all messages for a chat room
  */
-export const getMessages = async (req, res) => {
+export const getLastMessagesByChatRoom = async (req, res) => {
   try {
     const { chatRoomId } = req.params;
+    const { limit } = req.query;
 
+    // Validate chatRoomId
+    if (!chatRoomId) {
+      return res.status(400).json({ error: 'Chat room ID is required.' });
+    }
+
+    // Validate limit (default to 10 if not provided)
+    const messageLimit = parseInt(limit, 10) || 10;
+
+    // Fetch the last N messages
     const messages = await ChatMessageModel.find({ chatRoom: chatRoomId })
-      .populate('sender', 'name email')
-      .sort({ createdAt: 1 });
+      .sort({ createdAt: -1 }) // Sort by createdAt descending to get the latest messages
+      .limit(messageLimit)    // Limit to the specified number of messages
+      .exec();
 
-    return res.status(200).json({ messages });
+    // Return the messages in chronological order
+    const sortedMessages = messages.reverse(); // Reverse to maintain chronological order
+
+    res.status(200).json({ success: true, messages: sortedMessages });
   } catch (error) {
+    // Handle errors
     console.error('Error fetching messages:', error);
-    return res.status(500).json({ message: 'An error occurred while fetching messages.' });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
-
 /**
  * Add a user to a chat room
  */
