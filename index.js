@@ -54,7 +54,11 @@ io.on("connection", (socket) => {
    io.to(room).emit("userCount", userCount);
    socket.to(room).emit("notification",` A user has joined the room. Users: ${userCount}`);
    });
-  
+   socket.on("typing", ({ room, name, isTyping }) => {
+    socket.to(room).emit("userTyping", { name, isTyping });
+    console.log(isTyping);
+    
+  });
    // Handle leaving the room
    socket.on("disconnect", () => {
    for (const room of Object.keys(usersInRoom)) {
