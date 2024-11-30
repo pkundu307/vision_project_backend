@@ -86,6 +86,12 @@ const courseSchema = new mongoose.Schema(
       required: true,
       enum: ['Math', 'Science', 'Technology', 'Arts'],
     },
+    status: {
+      type: String,
+      required: true,
+      enum: ['ongoing', 'ended', 'upcoming'],
+      default: 'upcoming',
+    },
     chatRoom: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ChatRoom',
