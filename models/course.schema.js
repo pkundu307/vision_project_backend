@@ -71,6 +71,14 @@ const courseSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    announcements: [{
+      title: String,
+      content: String,
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
     materials: [
       {
         title: String,

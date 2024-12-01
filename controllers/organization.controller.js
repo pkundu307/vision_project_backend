@@ -1,7 +1,7 @@
 import { OrganizationModel } from "../models/organization.schema.js";
 import { CourseModel } from "../models/course.schema.js";
 import jwt from "jsonwebtoken";
-import { UserModel } from "../models/user.schema.js";
+import { UserModel, UserTypeEnum } from "../models/user.schema.js";
 
 
 export const createOrganization = async (req, res) => {
@@ -117,19 +117,22 @@ export const getAllCoursesByOrganization = async (req, res) => {
       return res.status(404).json({ message: "Organization not found" });
     }
 
-    // Fetch courses for the organization with only the required fields
+    // Fetch courses for the organization with detailed fields
     const courses = await CourseModel.find({ organization: organizationId })
-      .select("courseName startDate enrolledStudents instructors _id")
-      .populate("enrolledStudents", "_id") // To count total students if needed
-      .populate("instructors", "contactPhone"); // Assuming instructors' numbers are stored in `contactPhone`
+      .select("courseName startDate endDate instructors enrolledStudents is_active status")
+      .populate("instructors", "contactPhone") // Assuming instructor contact numbers are needed
+      .populate("enrolledStudents", "_id"); // To count total students
 
     // Format the data
     const formattedCourses = courses.map((course) => ({
-      id:course.id,
+      id: course._id,
       name: course.courseName,
-      totalStudents: course.enrolledStudents?.length || 0,
-      trainerNumber: course.instructors?.map((instructor) => instructor.contactPhone) || [],
+      totalStudents: course.enrolledStudents.length || 0,
+      trainerNumbers: course.instructors.length,
       startDate: course.startDate,
+      endDate: course.endDate,
+      isActive: course.is_active,
+      status: course.status,
     }));
 
     return res.status(200).json({
@@ -257,7 +260,7 @@ export const getCoursesByOrganization = async (req, res) => {
   }
 };
 
-export const getStudentsByOrganization = async (req, res) => {
+export const getStatsByOrganization = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
@@ -267,8 +270,7 @@ export const getStudentsByOrganization = async (req, res) => {
     const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
     const organizationId = decoded.userId;
 
-
-    // Validate the organization ID
+    // Validate organization ID
     if (!organizationId) {
       return res.status(400).json({
         success: false,
@@ -280,38 +282,41 @@ export const getStudentsByOrganization = async (req, res) => {
     const courses = await CourseModel.find({ organization: organizationId });
 
     if (!courses.length) {
-      return res.status(404).json({
+      return res.status(200).json({
         success: true,
         data: {
-          totalStudents: 0,
-          activeStudents: 0,
-          passoutStudents: 0,
-          newlyJoinedStudents: 0,
+          students: {
+            total: 0,
+            active: 0,
+            passout: 0,
+            newlyJoined: 0,
+          },
+          teachers: {
+            total: 0,
+            active: 0,
+            inactive: 0,
+          },
         },
         message: "No courses found for the specified organization",
       });
     }
 
     // Extract course IDs
-    const courseIds = courses.map(course => course._id);
+    const courseIds = courses.map((course) => course._id);
 
-    // Fetch all students enrolled in these courses
-    const students = await UserModel.find({ enrolledCourses: { $in: courseIds } });
+    // Fetch students and teachers
+    const [students, teachers] = await Promise.all([
+      UserModel.find({
+        userType: UserTypeEnum.STUDENT,
+        enrolledCourses: { $in: courseIds },
+      }),
+      UserModel.find({
+        userType: UserTypeEnum.TEACHER,
+        enrolledCourses: { $in: courseIds },
+      }),
+    ]);
 
-    if (!students.length) {
-      return res.status(200).json({
-        success: true,
-        data: {
-          totalStudents: 0,
-          activeStudents: 0,
-          passoutStudents: 0,
-          newlyJoinedStudents: 0,
-        },
-        message: "No students found for this organization",
-      });
-    }
-
-    // Initialize counters
+    // Initialize counters for students
     let activeStudents = 0;
     let passoutStudents = 0;
     let newlyJoinedStudents = 0;
@@ -319,7 +324,7 @@ export const getStudentsByOrganization = async (req, res) => {
     // Categorize students based on course status
     for (const student of students) {
       for (const courseId of student.enrolledCourses) {
-        const course = courses.find(c => c._id.toString() === courseId.toString());
+        const course = courses.find((c) => c._id.toString() === courseId.toString());
         if (course) {
           switch (course.status) {
             case "ongoing":
@@ -336,21 +341,50 @@ export const getStudentsByOrganization = async (req, res) => {
       }
     }
 
-    // Return the response
+    // Initialize counters for teachers
+    let activeTeachers = 0;
+    let inactiveTeachers = 0;
+
+    // Categorize teachers based on the courses they are teaching
+    for (const teacher of teachers) {
+      let isActive = false;
+      for (const courseId of teacher.enrolledCourses) {
+        const course = courses.find((c) => c._id.toString() === courseId.toString());
+        if (course && course.status === "ongoing") {
+          isActive = true;
+          break;
+        }
+      }
+
+      if (isActive) {
+        activeTeachers++;
+      } else {
+        inactiveTeachers++;
+      }
+    }
+
+    // Return combined response
     return res.status(200).json({
       success: true,
       data: {
-        totalStudents: students.length,
-        activeStudents,
-        passoutStudents,
-        newlyJoinedStudents,
+        students: {
+          total: students.length,
+          active: activeStudents,
+          passout: passoutStudents,
+          newlyJoined: newlyJoinedStudents,
+        },
+        teachers: {
+          total: teachers.length,
+          active: activeTeachers,
+          inactive: inactiveTeachers,
+        },
       },
     });
   } catch (error) {
-    console.error("Error fetching students by organization ID:", error);
+    console.error("Error fetching stats by organization ID:", error);
     return res.status(500).json({
       success: false,
-      message: "An error occurred while fetching students",
+      message: "An error occurred while fetching stats",
       error: error.message,
     });
   }
