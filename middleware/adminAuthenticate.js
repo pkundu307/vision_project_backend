@@ -1,38 +1,42 @@
+
+import { OrganizationModel } from "../models/organization.schema.js";
 import jwt from "jsonwebtoken";
-import adminSchema from "../models/admin.schema";
 
-// Middleware to verify admin
-const verifyAdmin = async (req, res, next) => {
-  try {
-    // Get token from the request headers
-    const token = req.headers.authorization?.split(' ')[1]; // Expected format: "Bearer <token>"
-
-    if (!token) {
-      return res.status(401).json({ message: 'Access denied. No token provided.' });
-    }
-
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Ensure you have a JWT_SECRET in your environment variables
-
-    // Find the admin by ID from the token payload
-    const admin = await Admin.findById(decoded.id);
-
-    if (!admin) {
-      return res.status(404).json({ message: 'Admin not found.' });
-    }
-
-    // Check if the user is an admin
-    if (!admin.admin) {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
-    }
-
-    // Attach admin info to the request object for further use
-    req.admin = admin;
-
-    next(); // Continue to the next middleware or route handler
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid token.' });
-  }
+ const verifyToken = (token) => {
+  return jwt.verify(token, process.env.JWT_SECRET);
 };
 
-module.exports = verifyAdmin;
+
+export const authenticateOrganization = async (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1]; // Expecting format "Bearer <token>"
+
+  if (!token) {
+    return res.status(401).json({ message: "Authentication token is required" });
+  }
+
+  try {
+    // Verify the token
+    const decoded = verifyToken(token);
+    console.log('====================================');
+    console.log(decoded);
+    console.log('====================================');
+    // Check if the token corresponds to an admin userType
+    if (decoded.userType !== "admin") {
+      return res.status(403).json({ message: "Access denied. Not an admin user." });
+    }
+
+    // Find the organization associated with the admin
+    const organization = await OrganizationModel.findById(decoded.userId);
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
+    // Attach the organization details to the request object for further use
+    req.organization = organization;
+
+    next(); // Pass control to the next middleware or route handler
+  } catch (error) {
+    console.error("Authentication error:", error);
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};

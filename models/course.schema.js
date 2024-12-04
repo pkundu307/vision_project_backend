@@ -47,7 +47,7 @@ const courseSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Organization',
       required: true,
-      index: true, // Add index
+      index: true,
     },
     enrollmentLimit: {
       type: Number,
@@ -105,6 +105,39 @@ const courseSchema = new mongoose.Schema(
       ref: 'ChatRoom',
       required: true,
     },
+    sessions: [
+      {
+        googleMeetLink: {
+          type: String,
+          required: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now, 
+        },
+      },
+    ],
+    notes: [
+      {
+        type: {
+          type: String,
+          enum: ['pdf', 'image', 'text'], // Defines the type of note
+          required: true,
+        },
+        content: {
+          type: String, // URL for PDFs or images, plain text for text notes
+          required: true,
+        },
+        title: {
+          type: String,
+          required: false,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now, // Automatically stores the upload timestamp
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

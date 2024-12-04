@@ -8,7 +8,7 @@ import { CourseModel } from '../models/course.schema.js';
 // Helper function to generate JWT token
 const generateToken = (userId, userType) => {
   const payload = { userId, userType };
-  return jwt.sign(payload, "pkpkpkpkpkpkpkpkpkpkpk", { expiresIn: '90h' }); 
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '90h' }); 
 };
 
 // Register Controller

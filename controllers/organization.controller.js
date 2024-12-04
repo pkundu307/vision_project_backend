@@ -184,8 +184,6 @@ export const getAllTrainers = async (req, res) => {
   }
 };
 
-
-
 // Fetch courses by organization ID
 export const getCoursesByOrganization = async (req, res) => {
   try {
@@ -385,6 +383,99 @@ export const getStatsByOrganization = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "An error occurred while fetching stats",
+      error: error.message,
+    });
+  }
+};
+
+export const addTodo = async (req, res) => {
+  try {
+    const { todoItem } = req.body;
+
+    if (!todoItem || typeof todoItem !== "string") {
+      return res.status(400).json({ message: "Invalid or missing 'todoItem' in the request body." });
+    }
+
+    // Add the new todo object to the organization's todo array
+    req.organization.todo.push({ todoItem });
+
+    // Save the updated organization
+    await req.organization.save();
+
+    return res.status(200).json({
+      message: "Todo added successfully.",
+      organization: {
+        id: req.organization._id,
+        name: req.organization.name,
+        todo: req.organization.todo, // Return the updated todo list
+      },
+    });
+  } catch (error) {
+    console.error("Error adding todo:", error);
+    return res.status(500).json({
+      message: "An error occurred while adding the todo.",
+      error: error.message,
+  
+    });
+  }}
+// Controller to make announcements
+export const makeAnnouncement = async (req, res) => {
+  try {
+    const { announcement } = req.body;
+
+    // Validate the input
+    if (!announcement || typeof announcement !== "string") {
+      return res.status(400).json({ message: "Invalid or missing 'announcement' in the request body." });
+    }
+
+    // Add the announcement to the organization's announcements array
+    req.organization.announcements.push({ todoItem: announcement });
+
+    // Save the updated organization
+    await req.organization.save();
+
+    return res.status(200).json({
+      message: "Announcement added successfully.",
+      organization: {
+        id: req.organization._id,
+        name: req.organization.name,
+        announcements: req.organization.announcements, // Return the updated announcements list
+      },
+    });
+  } catch (error) {
+    console.error("Error making announcement:", error);
+    return res.status(500).json({
+      message: "An error occurred while making the announcement.",
+      error: error.message,
+    });
+  }
+};
+
+export const getAnnouncements = async (req, res) => {
+  try {
+    // Retrieve the organization ID from the authenticated middleware
+    const organizationId = req.organization._id;
+
+    if (!organizationId) {
+      return res.status(401).json({ message: "Unauthorized access" });
+    }
+
+    // Fetch the organization by ID and get its announcements
+    const organization = await OrganizationModel.findById(organizationId, "announcements");
+
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
+    // Respond with the organization's announcements
+    return res.status(200).json({
+      message: "Announcements fetched successfully",
+      announcements: organization.announcements,
+    });
+  } catch (error) {
+    console.error("Error fetching announcements:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching announcements",
       error: error.message,
     });
   }

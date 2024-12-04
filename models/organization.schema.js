@@ -36,6 +36,30 @@ const organizationSchema = new mongoose.Schema(
         ref: 'Course',
       },
     ],
+    todo: [
+      {
+        todoItem: {
+          type: String,
+          required: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now, // Automatically set the creation time
+        },
+      },
+    ],
+    announcements: [
+      {
+        todoItem: {
+          type: String,
+          required: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now, // Automatically set the creation time
+        },
+      },
+    ],
     administrators: 
       {
         type: mongoose.Schema.Types.ObjectId,

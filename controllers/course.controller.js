@@ -291,3 +291,58 @@ export const getChatRoomByCourseId = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const addNote = async (req, res) => {
+  try {
+    const { courseId, note } = req.body; // Extract courseId and note from the request body
+    const { userType } = req.user; // Extract user details from the authenticated user
+
+    // Check if the user is a teacher or volunteer
+    if (userType !== 'teacher' && userType !== 'volunteer') {
+      return res.status(403).json({ message: 'You do not have permission to add notes.' });
+    }
+
+    // Validate the note structure
+    if (!note || !note.type || !note.content) {
+      return res.status(400).json({ message: 'Note type and content are required.' });
+    }
+
+    // Find the course
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found.' });
+    }
+
+    // Add the note to the course's notes array
+    course.notes.push({
+      ...note,
+      uploadedAt: new Date(), // Automatically add the current timestamp
+    });
+
+    // Save the updated course
+    await course.save();
+
+    res.status(200).json({ message: 'Note added successfully.', notes: course.notes });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+export const getNotesByCourseId = async (req, res) => {
+  try {
+    const { courseId } = req.params; // Extract courseId from the request params
+
+    // Find the course by ID
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found.' });
+    }
+
+    // Return the notes associated with the course
+    res.status(200).json({ notes: course.notes });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
