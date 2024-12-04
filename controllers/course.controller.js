@@ -1,13 +1,14 @@
 import jwt from "jsonwebtoken";
 import { CourseModel } from "../models/course.schema.js";
 import { OrganizationModel } from "../models/organization.schema.js";
-import { UserModel } from "../models/user.schema.js";
+import { AssignmentResponseModel, UserModel } from "../models/user.schema.js";
 import { ChatRoomModel } from "../models/chatRoom.schema.js";
 import { io } from "../index.js";
 
 // 'server' is your HTTP server instance
 
 import bcrypt from "bcrypt";
+import { AssignmentModel, QuestionModel } from "../models/assignment.schema.js";
 
 
 export const createCourse = async (req, res) => {
@@ -344,5 +345,217 @@ export const getNotesByCourseId = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+export const createAssignment = async (req, res) => {
+  try {
+    const { userType } = req.user;
+
+    if (userType !== 'teacher') {
+      return res.status(403).json({ message: 'Access denied. Only teachers can create assignments.' });
+    }
+
+    const { courseId, title, description, deadline, questions } = req.body;
+
+    if (!courseId || !title || !deadline || !questions || questions.length === 0) {
+      return res.status(400).json({ message: 'Missing required fields. Ensure courseId, title, deadline, and questions are provided.' });
+    }
+
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found.' });
+    }
+
+    // Temporarily create questions without assignmentId
+    const createdQuestions = await QuestionModel.insertMany(
+      questions.map((q) => ({
+        type: q.type,
+        questionText: q.questionText,
+        options: q.type === 'mcq' ? q.options : undefined,
+        correctAnswer: q.correctAnswer,
+        marks: q.marks,
+      }))
+    );
+
+    const totalMarks = createdQuestions.reduce((sum, question) => sum + question.marks, 0);
+
+    const newAssignment = new AssignmentModel({
+      courseId,
+      title,
+      description,
+      deadline,
+      questions: createdQuestions.map((q) => q._id),
+      totalMarks,
+    });
+
+    const savedAssignment = await newAssignment.save();
+
+    // Update the questions with the new assignmentId
+    await QuestionModel.updateMany(
+      { _id: { $in: createdQuestions.map((q) => q._id) } },
+      { $set: { assignmentId: savedAssignment._id } }
+    );
+
+    course.assignments.push(savedAssignment._id);
+    await course.save();
+
+    res.status(201).json({ message: 'Assignment created successfully.', assignment: savedAssignment });
+  } catch (error) {
+    console.error('Error creating assignment:', error);
+    res.status(500).json({ message: 'Internal server error.', error: error.message });
+  }
+};
+
+export const getAssignmentsByCourseId = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    // Validate the courseId
+    if (!courseId) {
+      return res.status(400).json({ message: 'Course ID is required.' });
+    }
+
+    // Fetch assignments with only name and description fields
+    const assignments = await AssignmentModel.find({ courseId })
+      .select('title description -_id'); // Include `title` and `description`, exclude `_id`
+
+    // Check if there are assignments for the course
+    if (assignments.length === 0) {
+      return res.status(404).json({ message: 'No assignments found for this course.' });
+    }
+
+    // Respond with the filtered assignments
+    res.status(200).json({
+      message: 'Assignments fetched successfully.',
+      assignments,
+    });
+  } catch (error) {
+    console.error('Error fetching assignments:', error);
+    res.status(500).json({ message: 'Internal server error.', error: error.message });
+  }
+};
+
+export const submitAssignment = async (req, res) => {
+  try {
+    // Extract userId from JWT
+    const { userId } = req.user;
+
+    // Extract submission details from the request body
+    const { assignmentId, responses } = req.body;
+
+    // Validate the input
+    if (!assignmentId || !responses || responses.length === 0) {
+      return res.status(400).json({
+        message: 'Assignment ID and responses are required.',
+      });
+    }
+
+    // Check if the assignment exists
+    const assignment = await AssignmentModel.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found.' });
+    }
+
+    // Check if the submission deadline has passed
+    if (new Date() > new Date(assignment.deadline)) {
+      return res.status(403).json({ message: 'The submission deadline has passed.' });
+    }
+
+    // Fetch questions from the database
+    const questionIds = responses.map((response) => response.questionId);
+    const questions = await QuestionModel.find({ _id: { $in: questionIds } });
+
+    // Map user responses to include question text, marks awarded, and correctness
+    const processedResponses = responses.map((response) => {
+      const question = questions.find((q) => q._id.toString() === response.questionId);
+
+      if (!question) {
+        throw new Error(`Question with ID ${response.questionId} not found.`);
+      }
+
+      const isCorrect = response.userAnswer === question.correctAnswer;
+      const marksObtained = isCorrect ? question.marks : 0;
+
+      return {
+        questionId: response.questionId,
+        questionText: question.questionText, // Include question text
+        userAnswer: response.userAnswer,
+        correctAnswer: question.correctAnswer,
+        marksObtained,
+        isCorrect,
+      };
+    });
+
+    // Calculate total marks obtained
+    const totalMarksObtained = processedResponses.reduce((sum, r) => sum + r.marksObtained, 0);
+
+    // Create a new assignment response
+    const newResponse = new AssignmentResponseModel({
+      userId,
+      assignmentId,
+      responses: processedResponses,
+      totalMarksObtained,
+    });
+
+    // Save the response in the database
+    const savedResponse = await newResponse.save();
+
+    // Return the response
+    res.status(201).json({
+      message: 'Assignment submitted successfully.',
+      response: savedResponse,
+    });
+  } catch (error) {
+    console.error('Error submitting assignment:', error);
+    res.status(500).json({
+      message: 'Internal server error.',
+      error: error.message,
+    });
+  }
+};
+
+export const getAssignmentById = async (req, res) => {
+  try {
+    // Extract assignmentId from the request parameters
+    const { assignmentId } = req.params;
+
+    // Validate the assignmentId
+    if (!assignmentId) {
+      return res.status(400).json({ message: 'Assignment ID is required.' });
+    }
+
+    // Fetch the assignment details from the database
+    const assignment = await AssignmentModel.findById(assignmentId).populate('courseId', 'courseName');
+
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found.' });
+    }
+
+    // Fetch the questions associated with this assignment
+    const questions = await QuestionModel.find({ assignmentId });
+
+    // Construct the response object
+    const assignmentDetails = {
+      _id: assignment._id,
+      title: assignment.title,
+      description: assignment.description,
+      deadline: assignment.deadline,
+      totalMarks: assignment.totalMarks,
+      courseName: assignment.courseId.courseName,
+      questions: questions.map((question) => ({
+        _id: question._id,
+        questionText: question.questionText,
+        type: question.type,
+        options: question.type === 'mcq' ? question.options : undefined,
+        marks: question.marks,
+      })),
+    };
+
+    // Send the response
+    res.status(200).json({ message: 'Assignment fetched successfully.', assignment: assignmentDetails });
+  } catch (error) {
+    console.error('Error fetching assignment:', error);
+    res.status(500).json({ message: 'Internal server error.', error: error.message });
   }
 };

@@ -138,6 +138,12 @@ const courseSchema = new mongoose.Schema(
         },
       },
     ],
+    assignments: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Assignment', // Reference the Assignment schema
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema(
     enrolledCourses: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Course', // Reference the Course model
+        ref: 'Course', 
       },
     ], 
     cv: {
@@ -69,6 +69,38 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    assignmentSubmissions: [
+      {
+        assignmentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Assignment', 
+        },
+        submittedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        answers: [
+          {
+            questionId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: 'Question', 
+            },
+            answer: {
+              type: String,
+              required: true,
+            },
+            marksObtained: {
+              type: Number,
+              default: 0,
+            },
+          },
+        ],
+        totalMarksObtained: {
+          type: Number, 
+          default: 0,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -88,3 +120,61 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 export const UserModel = mongoose.model('User', userSchema);
+
+
+const assignmentResponseSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  assignmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Assignment', 
+    required: true,
+  },
+  responses: [
+    {
+      questionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Question', 
+        required: true,
+      },
+      questionText: {
+        type: String, // Added to store the question text
+        required: true,
+      },
+      userAnswer: {
+        type: mongoose.Schema.Types.Mixed, 
+        required: true,
+      },
+      correctAnswer: {
+        type: mongoose.Schema.Types.Mixed, 
+        required: true,
+      },
+      marksObtained: {
+        type: Number, 
+        default: 0,
+      },
+      isCorrect: {
+        type: Boolean, 
+        default: false,
+      },
+    },
+  ],
+  totalMarksObtained: {
+    type: Number,
+    default: 0,
+  },
+  submissionDate: {
+    type: Date,
+    default: Date.now, 
+  },
+  status: {
+    type: String,
+    enum: ['submitted', 'graded', 'pending'], 
+    default: 'submitted',
+  },
+});
+
+export const AssignmentResponseModel = mongoose.model('AssignmentResponse', assignmentResponseSchema);
