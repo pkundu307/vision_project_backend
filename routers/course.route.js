@@ -1,4 +1,4 @@
-import { addNote, addStudentToCourse, addTrainerToCourse, createCourse, getChatRoomByCourseId, getEnrolledCoursesByid, getNotesByCourseId } from "../controllers/course.controller.js";
+import { addNote, addStudentToCourse, addTrainerToCourse, createCourse, getChatRoomByCourseId, getEnrolledCoursesByid, getNotesByCourseId, getStudentDetailsByCourseId } from "../controllers/course.controller.js";
 import express from "express";
 import authenticateUser from "../middleware/authenticate.js";
 
@@ -11,4 +11,5 @@ router.get("/courses/:id",getEnrolledCoursesByid)
 router.get("/:courseId",getChatRoomByCourseId)
 router.post('/add-note', authenticateUser, addNote);
 router.get('/get-notes/:courseId',getNotesByCourseId);
+router.get('/student-list/:courseId',getStudentDetailsByCourseId);
 export default router;
