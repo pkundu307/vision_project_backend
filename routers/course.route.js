@@ -11,6 +11,7 @@ import {
   getNotesByCourseId,
   getStudentDetailsByCourseId,
   submitAssignment,
+  updateSessionLink,
 } from "../controllers/course.controller.js";
 import express from "express";
 import authenticateUser from "../middleware/authenticate.js";
@@ -33,4 +34,5 @@ router.get(
 router.get("/assignment/:assignmentId", getAssignmentById);
 router.post("/assignment/submit", authenticateUser, submitAssignment);
 router.get("/student-list/:courseId", getStudentDetailsByCourseId);
+router.post("/sessionadd/:courseId",updateSessionLink)
 export default router;

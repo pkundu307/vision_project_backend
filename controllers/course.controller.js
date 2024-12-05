@@ -602,3 +602,41 @@ export const getAssignmentById = async (req, res) => {
     res.status(500).json({ message: 'Internal server error.', error: error.message });
   }
 };
+
+export const updateSessionLink = async (req, res) => {
+  try {
+    const { courseId } = req.params; // Extract course ID from route parameters
+    const { googleMeetLink } = req.body; // Extract session link from request body
+
+    if (!googleMeetLink) {
+      return res.status(400).json({ error: "Session link is required." });
+    }
+
+    // Find the course by ID
+    const course = await CourseModel.findById(courseId);
+
+    if (!course) {
+      return res.status(404).json({ error: "Course not found." });
+    }
+
+    // Replace the old session link with the new one (only keep one session)
+    course.sessions = [
+      {
+        googleMeetLink,
+        createdAt: new Date(), // Add the current timestamp
+      },
+    ];
+
+    // Save the updated course
+    await course.save();
+
+    res.status(200).json({
+      message: "Session link updated successfully.",
+      courseId: course._id,
+      sessions: course.sessions,
+    });
+  } catch (error) {
+    console.error("Error updating session link:", error);
+    res.status(500).json({ error: "Failed to update session link." });
+  }
+};
