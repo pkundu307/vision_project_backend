@@ -9,6 +9,7 @@ import {
   getChatRoomByCourseId,
   getEnrolledCoursesByid,
   getNotesByCourseId,
+  getStudentDetailsByCourseId,
   submitAssignment,
 } from "../controllers/course.controller.js";
 import express from "express";
@@ -29,6 +30,7 @@ router.get(
   authenticateUser,
   getAssignmentsByCourseId
 );
-router.get("/assignment/:assignmentId",getAssignmentById)
-router.post("/assignment/submit",authenticateUser,submitAssignment)
+router.get("/assignment/:assignmentId", getAssignmentById);
+router.post("/assignment/submit", authenticateUser, submitAssignment);
+router.get("/student-list/:courseId", getStudentDetailsByCourseId);
 export default router;

@@ -10,98 +10,101 @@ import { io } from "../index.js";
 import bcrypt from "bcrypt";
 import { AssignmentModel, QuestionModel } from "../models/assignment.schema.js";
 
-
 export const createCourse = async (req, res) => {
-    try {
-      const token = req.headers.authorization?.split(" ")[1];
-      if (!token) {
-        return res.status(401).json({ message: "Authorization token is required" });
-      }
-  
-      const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
-      const organizationId = decoded.userId;
-  
-      const organization = await OrganizationModel.findById(organizationId);
-      if (!organization) {
-        return res.status(404).json({ message: "Organization not found" });
-      }
-  
-      const {
-        courseName,
-        description,
-        duration,
-        schedule,
-        enrollmentLimit,
-        startDate,
-        endDate,
-        fee,
-        materials,
-        prerequisites,
-        category,
-      } = req.body;
-  
-      if (
-        !courseName ||
-        !description ||
-        !duration ||
-        !enrollmentLimit ||
-        !startDate ||
-        !endDate ||
-        !fee ||
-        !category
-      ) {
-        return res.status(400).json({ message: "All required fields must be provided" });
-      }
-  
-      // Create the chat room first
-      const chatRoom = new ChatRoomModel({ participants: [] });
-      let savedChatRoom = await chatRoom.save();
-  
-      // Create the course with the chatRoom ID
-      const newCourse = new CourseModel({
-        courseName,
-        description,
-        duration,
-        schedule,
-        enrollmentLimit,
-        startDate,
-        endDate,
-        fee,
-        materials,
-        prerequisites,
-        category,
-        organization: organizationId,
-        chatRoom: savedChatRoom._id, // Assign the chatRoom ID
-      });
-  
-      const savedCourse = await newCourse.save();
-      savedChatRoom.course = newCourse.id;
-      await savedChatRoom.save();
-  
-      // Add the course ID to the organization's coursesOffered
-      organization.coursesOffered.push(savedCourse._id);
-      await organization.save();
-  
-      return res.status(201).json({
-        message: "Course created successfully",
-        course: savedCourse,
-      });
-    } catch (error) {
-      console.error("Error creating course:", error);
-      return res.status(500).json({
-        message: "An error occurred while creating the course",
-        error: error.message,
-      });
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Authorization token is required" });
     }
-  };
-  
 
+    const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
+    const organizationId = decoded.userId;
+
+    const organization = await OrganizationModel.findById(organizationId);
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
+    const {
+      courseName,
+      description,
+      duration,
+      schedule,
+      enrollmentLimit,
+      startDate,
+      endDate,
+      fee,
+      materials,
+      prerequisites,
+      category,
+    } = req.body;
+
+    if (
+      !courseName ||
+      !description ||
+      !duration ||
+      !enrollmentLimit ||
+      !startDate ||
+      !endDate ||
+      !fee ||
+      !category
+    ) {
+      return res
+        .status(400)
+        .json({ message: "All required fields must be provided" });
+    }
+
+    // Create the chat room first
+    const chatRoom = new ChatRoomModel({ participants: [] });
+    let savedChatRoom = await chatRoom.save();
+
+    // Create the course with the chatRoom ID
+    const newCourse = new CourseModel({
+      courseName,
+      description,
+      duration,
+      schedule,
+      enrollmentLimit,
+      startDate,
+      endDate,
+      fee,
+      materials,
+      prerequisites,
+      category,
+      organization: organizationId,
+      chatRoom: savedChatRoom._id, // Assign the chatRoom ID
+    });
+
+    const savedCourse = await newCourse.save();
+    savedChatRoom.course = newCourse.id;
+    await savedChatRoom.save();
+
+    // Add the course ID to the organization's coursesOffered
+    organization.coursesOffered.push(savedCourse._id);
+    await organization.save();
+
+    return res.status(201).json({
+      message: "Course created successfully",
+      course: savedCourse,
+    });
+  } catch (error) {
+    console.error("Error creating course:", error);
+    return res.status(500).json({
+      message: "An error occurred while creating the course",
+      error: error.message,
+    });
+  }
+};
 
 export const addTrainerToCourse = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
-      return res.status(401).json({ message: "Authorization token is required" });
+      return res
+        .status(401)
+        .json({ message: "Authorization token is required" });
     }
 
     const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
@@ -114,15 +117,20 @@ export const addTrainerToCourse = async (req, res) => {
       return res.status(400).json({ message: "Email and name are required" });
     }
 
-    const course = await CourseModel.findOne({ _id: courseId, organization: organizationId }).populate('chatRoom');
+    const course = await CourseModel.findOne({
+      _id: courseId,
+      organization: organizationId,
+    }).populate("chatRoom");
     if (!course) {
-      return res.status(404).json({ message: "Course not found or does not belong to the organization" });
+      return res.status(404).json({
+        message: "Course not found or does not belong to the organization",
+      });
     }
 
     let trainer = await UserModel.findOne({ email });
     if (!trainer) {
       const defaultPassword = "trainer123";
-      
+
       trainer = new UserModel({
         email,
         password: defaultPassword,
@@ -131,7 +139,7 @@ export const addTrainerToCourse = async (req, res) => {
       });
       await trainer.save();
     }
-    trainer.enrolledCourses.push(courseId)
+    trainer.enrolledCourses.push(courseId);
     await trainer.save();
     if (!course.instructors.includes(trainer._id)) {
       course.instructors.push(trainer._id);
@@ -164,132 +172,137 @@ export const addTrainerToCourse = async (req, res) => {
   }
 };
 
-
 export const addStudentToCourse = async (req, res) => {
-    try {
-      const token = req.headers.authorization?.split(" ")[1];
-      if (!token) {
-        return res.status(401).json({ message: "Authorization token is required" });
-      }
-  
-      const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
-      const organizationId = decoded.userId;
-  
-      const { email, name } = req.body;
-      const { courseId } = req.params;
-  
-      if (!email || !name) {
-        return res.status(400).json({ message: "Email and name are required" });
-      }
-  
-      const course = await CourseModel.findOne({ _id: courseId, organization: organizationId }).populate('chatRoom');
-      if (!course) {
-        return res.status(404).json({ message: "Course not found or does not belong to the organization" });
-      }
-  
-      let student = await UserModel.findOne({ email });
-      if (!student) {
-        const defaultPassword = "student123";
-        student = new UserModel({
-          email,
-          password: defaultPassword,
-          name,
-          userType: "student",
-        });
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Authorization token is required" });
+    }
 
-        student.enrolledCourses.push(courseId)
-        await student.save();
-      }
+    const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
+    const organizationId = decoded.userId;
 
-  
-      if (!course.enrolledStudents.includes(student._id)) {
-        course.enrolledStudents.push(student._id);
-        await course.save();
-  
-        // Add student to chat room
-        if (!course.chatRoom.participants.includes(student._id)) {
-          course.chatRoom.participants.push(student._id);
-          await course.chatRoom.save();
-        }
-  
-        // Notify other participants via Socket.IO
-        io.to(course.chatRoom._id.toString()).emit("participantAdded", {
-          userId: student._id,
-          name: student.name,
-          role: "student",
-        });
-      }
-  
-      return res.status(200).json({
-        message: "Student added to the course and chat room successfully",
-        course,
-      });
-    } catch (error) {
-      console.error("Error adding student:", error);
-      return res.status(500).json({
-        message: "An error occurred while adding the student",
-        error: error.message,
+    const { email, name } = req.body;
+    const { courseId } = req.params;
+
+    if (!email || !name) {
+      return res.status(400).json({ message: "Email and name are required" });
+    }
+
+    const course = await CourseModel.findOne({
+      _id: courseId,
+      organization: organizationId,
+    }).populate("chatRoom");
+    if (!course) {
+      return res.status(404).json({
+        message: "Course not found or does not belong to the organization",
       });
     }
-  };
-  
-  export const getEnrolledCoursesByid = async (req, res) => {
-    try {
-      const { id } = req.params;
-  
-      // Fetch the student from the database
-      const student = await UserModel.findById(id).populate({
-        path: "enrolledCourses", // Populate enrolled courses
-        model: "Course", // Refers to the CourseModel
-        select: "courseName description duration startDate endDate fee", // Select only specific fields
+
+    let student = await UserModel.findOne({ email });
+    if (!student) {
+      const defaultPassword = "student123";
+      student = new UserModel({
+        email,
+        password: defaultPassword,
+        name,
+        userType: "student",
       });
-  
-      if (!student) {
-        return res.status(404).json({ message: "Student not found" });
+
+      student.enrolledCourses.push(courseId);
+      await student.save();
+    }
+
+    if (!course.enrolledStudents.includes(student._id)) {
+      course.enrolledStudents.push(student._id);
+      await course.save();
+
+      // Add student to chat room
+      if (!course.chatRoom.participants.includes(student._id)) {
+        course.chatRoom.participants.push(student._id);
+        await course.chatRoom.save();
       }
-  
-      // Check if the student has any enrolled courses
-      if (!student.enrolledCourses || student.enrolledCourses.length === 0) {
-        return res.status(200).json({ message: "No enrolled courses found", courses: [] });
-      }
-  
-      return res.status(200).json({
-        message: "Enrolled courses retrieved successfully",
-        courses: student.enrolledCourses,
-      });
-    } catch (error) {
-      console.error("Error fetching enrolled courses:", error);
-      return res.status(500).json({
-        message: "An error occurred while fetching the enrolled courses",
-        error: error.message,
+
+      // Notify other participants via Socket.IO
+      io.to(course.chatRoom._id.toString()).emit("participantAdded", {
+        userId: student._id,
+        name: student.name,
+        role: "student",
       });
     }
-  };
-  
 
+    return res.status(200).json({
+      message: "Student added to the course and chat room successfully",
+      course,
+    });
+  } catch (error) {
+    console.error("Error adding student:", error);
+    return res.status(500).json({
+      message: "An error occurred while adding the student",
+      error: error.message,
+    });
+  }
+};
+
+export const getEnrolledCoursesByid = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch the student from the database
+    const student = await UserModel.findById(id).populate({
+      path: "enrolledCourses", // Populate enrolled courses
+      model: "Course", // Refers to the CourseModel
+      select: "courseName description duration startDate endDate fee", // Select only specific fields
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Check if the student has any enrolled courses
+    if (!student.enrolledCourses || student.enrolledCourses.length === 0) {
+      return res
+        .status(200)
+        .json({ message: "No enrolled courses found", courses: [] });
+    }
+
+    return res.status(200).json({
+      message: "Enrolled courses retrieved successfully",
+      courses: student.enrolledCourses,
+    });
+  } catch (error) {
+    console.error("Error fetching enrolled courses:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching the enrolled courses",
+      error: error.message,
+    });
+  }
+};
 
 // Controller function to get chat room ID by course ID
 export const getChatRoomByCourseId = async (req, res) => {
   try {
     const { courseId } = req.params;
-    
+
     // Find the course by ID
     const course = await CourseModel.findById(courseId);
     if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
+      return res.status(404).json({ message: "Course not found" });
     }
-    
+
     // Find the chat room associated with the course
     const chatRoom = await ChatRoomModel.findOne({ course: course._id });
     if (!chatRoom) {
-      return res.status(404).json({ message: 'Chat room not found' });
+      return res.status(404).json({ message: "Chat room not found" });
     }
-    
+
     // Respond with the chat room ID
     res.status(200).json({ chatRoomId: chatRoom._id });
   } catch (error) {
-    console.error('Error fetching chat room:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching chat room:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -299,19 +312,23 @@ export const addNote = async (req, res) => {
     const { userType } = req.user; // Extract user details from the authenticated user
 
     // Check if the user is a teacher or volunteer
-    if (userType !== 'teacher' && userType !== 'volunteer') {
-      return res.status(403).json({ message: 'You do not have permission to add notes.' });
+    if (userType !== "teacher" && userType !== "volunteer") {
+      return res
+        .status(403)
+        .json({ message: "You do not have permission to add notes." });
     }
 
     // Validate the note structure
     if (!note || !note.type || !note.content) {
-      return res.status(400).json({ message: 'Note type and content are required.' });
+      return res
+        .status(400)
+        .json({ message: "Note type and content are required." });
     }
 
     // Find the course
     const course = await CourseModel.findById(courseId);
     if (!course) {
-      return res.status(404).json({ message: 'Course not found.' });
+      return res.status(404).json({ message: "Course not found." });
     }
 
     // Add the note to the course's notes array
@@ -323,10 +340,12 @@ export const addNote = async (req, res) => {
     // Save the updated course
     await course.save();
 
-    res.status(200).json({ message: 'Note added successfully.', notes: course.notes });
+    res
+      .status(200)
+      .json({ message: "Note added successfully.", notes: course.notes });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error.' });
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
@@ -337,16 +356,40 @@ export const getNotesByCourseId = async (req, res) => {
     // Find the course by ID
     const course = await CourseModel.findById(courseId);
     if (!course) {
-      return res.status(404).json({ message: 'Course not found.' });
+      return res.status(404).json({ message: "Course not found." });
     }
 
     // Return the notes associated with the course
     res.status(200).json({ notes: course.notes });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error.' });
+    res.status(500).json({ message: "Internal server error." });
   }
 };
+
+export const getStudentDetailsByCourseId = async (req, res) => {
+  try {
+    const { courseId } = req.params; // Find the course by ID and populate enrolledStudents
+    const course = await CourseModel.findById(courseId).populate(
+      "enrolledStudents",
+      "name"
+    );
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    } // Extract student details
+    const studentDetails = course.enrolledStudents.map((student) => ({
+      studentId: student._id,
+      courseId: course._id,
+      studentName: student.name,
+      startDate: course.startDate
+    })); // Respond with the student details
+    res.status(200).json({ studentDetails });
+  } catch (error) {
+    console.error("Error fetching student details:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 export const createAssignment = async (req, res) => {
   try {
