@@ -395,8 +395,8 @@ export const createAssignment = async (req, res) => {
   try {
     const { userType } = req.user;
 
-    if (userType !== 'teacher') {
-      return res.status(403).json({ message: 'Access denied. Only teachers can create assignments.' });
+    if (userType !== 'teacher'|| 'volunteer') {
+      return res.status(403).json({ message: 'Access denied. Only teachers or volunteer can create assignments.' });
     }
 
     const { courseId, title, description, deadline, questions } = req.body;
@@ -461,7 +461,7 @@ export const getAssignmentsByCourseId = async (req, res) => {
 
     // Fetch assignments with only name and description fields
     const assignments = await AssignmentModel.find({ courseId })
-      .select('title description -_id'); // Include `title` and `description`, exclude `_id`
+      .select('title description deadline _id'); // Include `title` and `description`, exclude `_id`
 
     // Check if there are assignments for the course
     if (assignments.length === 0) {
