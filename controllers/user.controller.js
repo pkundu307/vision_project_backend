@@ -176,10 +176,10 @@ export const getCoursesByUserId = async (req, res) => {
     let courses;
     if (user.userType === 'student') {
       // Find courses where the user is enrolled
-      courses = await CourseModel.find({ enrolledStudents: userId }).populate('instructors organization chatRoom sessions');
+      courses = await CourseModel.find({ enrolledStudents: userId }).populate('instructors organization chatRoom sessions notes');
     } else if (user.userType === 'teacher') {
       // Find courses where the user is an instructor
-      courses = await CourseModel.find({ instructors: userId }).populate('enrolledStudents organization chatRoom sessions');
+      courses = await CourseModel.find({ instructors: userId }).populate('enrolledStudents organization chatRoom sessions notes');
     } else {
       return res.status(400).json({ message: 'Invalid user type for this action' });
     }

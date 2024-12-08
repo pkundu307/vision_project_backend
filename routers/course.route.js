@@ -1,5 +1,5 @@
 import {
-  addNote,
+  // addNote,
   addStudentToCourse,
   addTrainerToCourse,
   createAssignment,
@@ -8,23 +8,26 @@ import {
   getAssignmentsByCourseId,
   getChatRoomByCourseId,
   getEnrolledCoursesByid,
-  getNotesByCourseId,
+  // getNotesByCourseId,
   getStudentDetailsByCourseId,
   submitAssignment,
+  updateCourseStatus,
   updateSessionLink,
 } from "../controllers/course.controller.js";
 import express from "express";
 import authenticateUser from "../middleware/authenticate.js";
+import { authenticateOrganization } from "../middleware/adminAuthenticate.js";
 
 const router = express.Router();
 
 router.post("/create", createCourse);
 router.post("/courses/:courseId/trainers", addTrainerToCourse);
 router.post("/courses/:courseId/students", addStudentToCourse);
+router.patch("/:courseId/",updateCourseStatus)
 router.get("/courses/:id", getEnrolledCoursesByid);
 router.get("/:courseId", getChatRoomByCourseId);
-router.post("/add-note", authenticateUser, addNote);
-router.get("/get-notes/:courseId", getNotesByCourseId);
+// router.post("/add-note", authenticateUser, addNote);
+// router.get("/get-notes/:courseId", getNotesByCourseId);
 router.post("/assignments", authenticateUser, createAssignment);
 router.get(
   "/assignments/:courseId",

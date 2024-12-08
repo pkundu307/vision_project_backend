@@ -480,3 +480,51 @@ export const getAnnouncements = async (req, res) => {
     });
   }
 };
+
+export const getStudentsByOrganizationId = async (req, res) => {
+  try {
+    console.log('====================================');
+    console.log(req.organization._id);
+    console.log('====================================');
+    const organizationId = req.organization._id;
+    // Validate if organization exists
+    const organization = await OrganizationModel.findById(organizationId);
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
+    // Find all courses offered by the organization
+    const courses = await CourseModel.find({ organization: organizationId }).populate("enrolledStudents", "name email");
+
+    // Extract enrolled students and include course names
+    const studentsData = [];
+    courses.forEach((course) => {
+      course.enrolledStudents.forEach((student) => {
+        studentsData.push({
+          studentId: student._id,
+          name: student.name,
+          email: student.email,
+          phone: student.phone,
+          courseName: course.courseName,
+        });
+      });
+    });
+
+    // Remove duplicates (in case a student is enrolled in multiple courses)
+    const uniqueStudents = studentsData.filter(
+      (student, index, self) =>
+        index === self.findIndex((s) => s.studentId.equals(student.studentId) && s.courseName === student.courseName)
+    );
+
+    res.status(200).json({
+      organization: {
+        id: organization._id,
+        name: organization.name,
+      },
+      students: uniqueStudents,
+    });
+  } catch (error) {
+    console.error("Error fetching students by organization ID:", error);
+    res.status(500).json({ message: "An error occurred while fetching students", error: error.message });
+  }
+};

@@ -1,5 +1,5 @@
 import express from 'express';
-import {addTodo, createOrganization, getAllCoursesByOrganization, getAllTrainers, getAnnouncements, getCoursesByOrganization, getStatsByOrganization, makeAnnouncement} from '../controllers/organization.controller.js';
+import {addTodo, createOrganization, getAllCoursesByOrganization, getAllTrainers, getAnnouncements, getCoursesByOrganization, getStatsByOrganization, getStudentsByOrganizationId, makeAnnouncement} from '../controllers/organization.controller.js';
 import { authenticateOrganization } from '../middleware/adminAuthenticate.js';
 
 
@@ -16,4 +16,6 @@ router.post('/addtodo',authenticateOrganization,addTodo)
 //announcements
 router.post('/announcements',authenticateOrganization,makeAnnouncement)
 router.get('/announcements',authenticateOrganization,getAnnouncements)
+router.get("/students",authenticateOrganization, getStudentsByOrganizationId);
+
 export default router;

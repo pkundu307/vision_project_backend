@@ -119,23 +119,8 @@ const courseSchema = new mongoose.Schema(
     ],
     notes: [
       {
-        type: {
-          type: String,
-          enum: ['pdf', 'image', 'text'], // Defines the type of note
-          required: true,
-        },
-        content: {
-          type: String, // URL for PDFs or images, plain text for text notes
-          required: true,
-        },
-        title: {
-          type: String,
-          required: false,
-        },
-        uploadedAt: {
-          type: Date,
-          default: Date.now, // Automatically stores the upload timestamp
-        },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Note', // Reference the Note schema
       },
     ],
     assignments: [
@@ -149,3 +134,36 @@ const courseSchema = new mongoose.Schema(
 );
 
 export const CourseModel = mongoose.model('Course', courseSchema);
+
+
+
+
+const noteSchema = new mongoose.Schema(
+  {
+    type: {
+      type: String,
+      enum: ['pdf', 'image', 'text'], // Defines the type of note
+      required: true,
+    },
+    content: {
+      type: String, // URL for PDFs or images, plain text for text notes
+      required: true,
+    },
+    title: {
+      type: String,
+      required: false,
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now, // Automatically stores the upload timestamp
+    },
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
+
+export const NoteModel = mongoose.model('Note', noteSchema);

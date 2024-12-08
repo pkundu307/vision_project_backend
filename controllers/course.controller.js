@@ -306,48 +306,48 @@ export const getChatRoomByCourseId = async (req, res) => {
   }
 };
 
-export const addNote = async (req, res) => {
-  try {
-    const { courseId, note } = req.body; // Extract courseId and note from the request body
-    const { userType } = req.user; // Extract user details from the authenticated user
+// export const addNote = async (req, res) => {
+//   try {
+//     const { courseId, note } = req.body; // Extract courseId and note from the request body
+//     const { userType } = req.user; // Extract user details from the authenticated user
 
-    // Check if the user is a teacher or volunteer
-    if (userType !== "teacher" && userType !== "volunteer") {
-      return res
-        .status(403)
-        .json({ message: "You do not have permission to add notes." });
-    }
+//     // Check if the user is a teacher or volunteer
+//     if (userType !== "teacher" && userType !== "volunteer") {
+//       return res
+//         .status(403)
+//         .json({ message: "You do not have permission to add notes." });
+//     }
 
-    // Validate the note structure
-    if (!note || !note.type || !note.content) {
-      return res
-        .status(400)
-        .json({ message: "Note type and content are required." });
-    }
+//     // Validate the note structure
+//     if (!note || !note.type || !note.content) {
+//       return res
+//         .status(400)
+//         .json({ message: "Note type and content are required." });
+//     }
 
-    // Find the course
-    const course = await CourseModel.findById(courseId);
-    if (!course) {
-      return res.status(404).json({ message: "Course not found." });
-    }
+//     // Find the course
+//     const course = await CourseModel.findById(courseId);
+//     if (!course) {
+//       return res.status(404).json({ message: "Course not found." });
+//     }
 
-    // Add the note to the course's notes array
-    course.notes.push({
-      ...note,
-      uploadedAt: new Date(), // Automatically add the current timestamp
-    });
+//     // Add the note to the course's notes array
+//     course.notes.push({
+//       ...note,
+//       uploadedAt: new Date(), // Automatically add the current timestamp
+//     });
 
-    // Save the updated course
-    await course.save();
+//     // Save the updated course
+//     await course.save();
 
-    res
-      .status(200)
-      .json({ message: "Note added successfully.", notes: course.notes });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-};
+//     res
+//       .status(200)
+//       .json({ message: "Note added successfully.", notes: course.notes });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Internal server error." });
+//   }
+// };
 
 export const getNotesByCourseId = async (req, res) => {
   try {
@@ -394,17 +394,21 @@ export const getStudentDetailsByCourseId = async (req, res) => {
 export const createAssignment = async (req, res) => {
   try {
     const { userType } = req.user;
+    console.log('====================================');
+    console.log(userType);
+    console.log('====================================');
 
-    if (userType !== 'teacher'|| 'volunteer') {
-      return res.status(403).json({ message: 'Access denied. Only teachers or volunteer can create assignments.' });
+    if (userType !== 'teacher' && userType !== 'volunteer') {
+      return res.status(403).json({ message: 'Access denied. Only teachers or volunteers can create assignments.' });
     }
-
+    
     const { courseId, title, description, deadline, questions } = req.body;
 
     if (!courseId || !title || !deadline || !questions || questions.length === 0) {
       return res.status(400).json({ message: 'Missing required fields. Ensure courseId, title, deadline, and questions are provided.' });
     }
-
+    console.log(courseId);
+    
     const course = await CourseModel.findById(courseId);
     if (!course) {
       return res.status(404).json({ message: 'Course not found.' });
@@ -638,5 +642,39 @@ export const updateSessionLink = async (req, res) => {
   } catch (error) {
     console.error("Error updating session link:", error);
     res.status(500).json({ error: "Failed to update session link." });
+  }
+};
+
+export const updateCourseStatus = async (req, res) => {
+  const { courseId } = req.params;
+  const { status } = req.body; // Expected values: 'ongoing', 'ended'
+
+  // Validate status input
+  const validStatuses = ['ongoing', 'ended','upcoming'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ message: "Invalid status value." });
+  }
+
+  try {
+    // Find and update the course
+    const updatedCourse = await CourseModel.findByIdAndUpdate(
+      courseId,
+      { status },
+      { new: true } // Return the updated course
+    );
+
+    // If course not found
+    if (!updatedCourse) {
+      return res.status(404).json({ message: "Course not found." });
+    }
+
+    // Respond with the updated course
+    res.status(200).json({
+      message: "Course status updated successfully.",
+      course: updatedCourse,
+    });
+  } catch (error) {
+    console.error("Error updating course status:", error);
+    res.status(500).json({ message: "Internal server error." });
   }
 };
