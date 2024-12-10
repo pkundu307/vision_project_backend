@@ -678,3 +678,62 @@ export const updateCourseStatus = async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 };
+export const getCourseDetailsById = async (req, res) => {
+  const { courseId } = req.params;
+
+  try {
+    // Find course details
+    const course = await CourseModel.findById(courseId)
+      .populate({
+        path: 'instructors',
+        select: 'name email userType',
+        match: { userType: 'teacher' },
+      })
+      .populate({
+        path: 'enrolledStudents',
+        select: 'name email userType',
+      })
+      .exec();
+
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Separate students and volunteers
+    const students = course.enrolledStudents.filter(
+      (student) => student.userType === 'student'
+    );
+    const volunteers = course.enrolledStudents.filter(
+      (volunteer) => volunteer.userType === 'volunteer'
+    );
+
+    // Response object
+    const response = {
+      courseDetails: {
+        courseName: course.courseName,
+        description: course.description,
+        duration: course.duration,
+        schedule: course.schedule,
+        enrollmentLimit: course.enrollmentLimit,
+        enrolledStudentsCount: course.enrolledStudents.length,
+        startDate: course.startDate,
+        endDate: course.endDate,
+        fee: course.fee,
+        announcements: course.announcements,
+        materials: course.materials,
+        prerequisites: course.prerequisites,
+        category: course.category,
+        status: course.status,
+      },
+      instructors: course.instructors,
+      students,
+      volunteers,
+    };
+
+    // Send response
+    res.status(200).json(response);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+};

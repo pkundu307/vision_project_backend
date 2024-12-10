@@ -7,6 +7,7 @@ import {
   getAssignmentById,
   getAssignmentsByCourseId,
   getChatRoomByCourseId,
+  getCourseDetailsById,
   getEnrolledCoursesByid,
   // getNotesByCourseId,
   getStudentDetailsByCourseId,
@@ -38,4 +39,5 @@ router.get("/assignment/:assignmentId", getAssignmentById);
 router.post("/assignment/submit", authenticateUser, submitAssignment);
 router.get("/student-list/:courseId", getStudentDetailsByCourseId);
 router.post("/sessionadd/:courseId",updateSessionLink)
+router.get("/alldetails/:courseId",getCourseDetailsById)
 export default router;
