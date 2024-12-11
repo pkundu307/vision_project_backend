@@ -16,6 +16,11 @@ const organizationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    plan:{
+      type: String,
+      required: true,
+      enum: ['starter','basic', 'pro','enterprise'],
+    },
     contactEmail: {
       type: String,
       required: true,

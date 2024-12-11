@@ -693,6 +693,10 @@ export const getCourseDetailsById = async (req, res) => {
         path: 'enrolledStudents',
         select: 'name email userType',
       })
+      .populate({
+        path: 'enrolledStudentsRemoved',
+        select: 'name email userType',
+      })
       .exec();
 
     if (!course) {
@@ -715,7 +719,7 @@ export const getCourseDetailsById = async (req, res) => {
         duration: course.duration,
         schedule: course.schedule,
         enrollmentLimit: course.enrollmentLimit,
-        enrolledStudentsCount: course.enrolledStudents.length,
+        enrolledStudentsCount: course.enrolledStudents.length+course.enrolledStudentsRemoved.length,
         startDate: course.startDate,
         endDate: course.endDate,
         fee: course.fee,
@@ -727,6 +731,7 @@ export const getCourseDetailsById = async (req, res) => {
       },
       instructors: course.instructors,
       students,
+      removedStudent: course.enrolledStudentsRemoved,
       volunteers,
     };
 
@@ -735,5 +740,79 @@ export const getCourseDetailsById = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error', error });
+  }
+};
+export const removeStudentFromCourse = async (req, res) => {
+  const { courseId, studentId } = req.params;
+
+  try {
+    // Find the course
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Check if the student exists
+    const student = await UserModel.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // Check if the student is in enrolledStudents or enrolledStudentsRemoved
+    const isEnrolled = course.enrolledStudents.includes(studentId);
+    const isRemoved = course.enrolledStudentsRemoved.includes(studentId);
+
+    if (!isEnrolled && !isRemoved) {
+      return res
+        .status(400)
+        .json({ message: 'Student is neither enrolled nor removed in this course' });
+    }
+
+    if (isEnrolled) {
+      // Remove from enrolledStudents and add to enrolledStudentsRemoved
+      course.enrolledStudents = course.enrolledStudents.filter(
+        (id) => id.toString() !== studentId
+      );
+      if (!isRemoved) {
+        course.enrolledStudentsRemoved.push(studentId);
+      }
+
+      // Update user's enrolledCourses and add to enrolledCoursesRemoved
+      student.enrolledCourses = student.enrolledCourses.filter(
+        (id) => id.toString() !== courseId
+      );
+      if (!student.enrolledCoursesRemoved.includes(courseId)) {
+        student.enrolledCoursesRemoved.push(courseId);
+      }
+    } else if (isRemoved) {
+      // Re-enroll the student (undo removal)
+      course.enrolledStudentsRemoved = course.enrolledStudentsRemoved.filter(
+        (id) => id.toString() !== studentId
+      );
+      if (!course.enrolledStudents.includes(studentId)) {
+        course.enrolledStudents.push(studentId);
+      }
+
+      // Update user's enrolledCoursesRemoved and re-add to enrolledCourses
+      student.enrolledCoursesRemoved = student.enrolledCoursesRemoved.filter(
+        (id) => id.toString() !== courseId
+      );
+      if (!student.enrolledCourses.includes(courseId)) {
+        student.enrolledCourses.push(courseId);
+      }
+    }
+
+    // Save changes to the database
+    await course.save();
+    await student.save();
+
+    return res.status(200).json({
+      message: isEnrolled
+        ? 'Student removed from the course successfully'
+        : 'Student re-enrolled to the course successfully',
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'An error occurred while processing the request' });
   }
 };

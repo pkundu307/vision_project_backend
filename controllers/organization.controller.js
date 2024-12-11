@@ -46,6 +46,7 @@ export const createOrganization = async (req, res) => {
       administrators,
       establishedYear,
       logo,
+      plan:'starter',
       adminName,
       adminPassword, // Include admin credentials
     });
@@ -483,9 +484,6 @@ export const getAnnouncements = async (req, res) => {
 
 export const getStudentsByOrganizationId = async (req, res) => {
   try {
-    console.log('====================================');
-    console.log(req.organization._id);
-    console.log('====================================');
     const organizationId = req.organization._id;
     // Validate if organization exists
     const organization = await OrganizationModel.findById(organizationId);

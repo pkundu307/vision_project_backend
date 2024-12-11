@@ -50,6 +50,12 @@ const userSchema = new mongoose.Schema(
         ref: 'Course', 
       },
     ], 
+    enrolledCoursesRemoved: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course',
+      },
+    ],
     cv: {
       type: String,
       required: false,

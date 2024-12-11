@@ -59,6 +59,12 @@ const courseSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    enrolledStudentsRemoved: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
     startDate: {
       type: Date,
       required: true,

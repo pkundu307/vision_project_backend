@@ -11,6 +11,7 @@ import {
   getEnrolledCoursesByid,
   // getNotesByCourseId,
   getStudentDetailsByCourseId,
+  removeStudentFromCourse,
   submitAssignment,
   updateCourseStatus,
   updateSessionLink,
@@ -40,4 +41,5 @@ router.post("/assignment/submit", authenticateUser, submitAssignment);
 router.get("/student-list/:courseId", getStudentDetailsByCourseId);
 router.post("/sessionadd/:courseId",updateSessionLink)
 router.get("/alldetails/:courseId",getCourseDetailsById)
+router.patch('/:courseId/students/:studentId',authenticateOrganization,removeStudentFromCourse)
 export default router;
