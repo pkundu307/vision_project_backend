@@ -39,6 +39,13 @@ const courseSchema = new mongoose.Schema(
         required: true,
       },
     ],
+    volunteers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+    ],
     is_active:{
       type: Boolean,
       default: true, 

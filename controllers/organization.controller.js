@@ -526,3 +526,43 @@ export const getStudentsByOrganizationId = async (req, res) => {
     res.status(500).json({ message: "An error occurred while fetching students", error: error.message });
   }
 };
+export const getCourseAnnouncementsByOrganization = async (req, res) => {
+  try {
+    const organizationId = req.organization._id;
+
+    if (!organizationId) {
+      return res.status(401).json({ message: "Unauthorized access" });
+    } // Get organization ID from route parameters
+
+    // Validate organization ID
+    if (!organizationId) {
+      return res.status(400).json({ success: false, message: "Organization ID is required." });
+    }
+
+    // Find the organization and populate courses
+    const organization = await OrganizationModel.findById(organizationId).populate({
+      path: "coursesOffered",
+      select: "announcements courseName",
+    });
+
+    if (!organization) {
+      return res.status(404).json({ success: false, message: "Organization not found." });
+    }
+
+    // Extract announcements from all courses
+    const announcements = organization.coursesOffered.flatMap((course) => {
+      return course.announcements.map((announcement) => ({
+        courseName: course.courseName,
+        ...announcement,
+      }));
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: announcements,
+    });
+  } catch (error) {
+    console.error("Error fetching announcements:", error);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};

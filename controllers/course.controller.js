@@ -172,6 +172,97 @@ export const addTrainerToCourse = async (req, res) => {
   }
 };
 
+export const addVolunteerToCourse = async (req, res) => {
+  try {
+    // Validate token
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ message: "Authorization token is required" });
+    }
+
+    const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
+    const organizationId = decoded.userId;
+
+    // Extract body and params
+    const { email, name } = req.body;
+    console.log(email,name);
+    
+    const { courseId } = req.params;
+
+    if (!email || !name) {
+      return res.status(400).json({ message: "Email and name are required" });
+    }
+
+    // Validate ObjectIDs
+    // if (!mongoose.Types.ObjectId.isValid(courseId) || !mongoose.Types.ObjectId.isValid(organizationId)) {
+    //   return res.status(400).json({ message: "Invalid course or organization ID" });
+    // }
+
+    // Find course and validate organization
+    const course = await CourseModel.findOne({
+      _id: courseId,
+      organization: organizationId,
+    }).populate("chatRoom");
+
+    if (!course) {
+      return res.status(404).json({
+        message: "Course not found or does not belong to the organization",
+      });
+    }
+
+    // Find or create volunteer
+    let volunteer = await UserModel.findOne({ email });
+    if (!volunteer) {
+      const hashedPassword = await bcrypt.hash("volunteer123", 10);
+
+      volunteer = new UserModel({
+        email,
+        password: hashedPassword,
+        name,
+        userType: "volunteer",
+      });
+      await volunteer.save();
+    }
+
+    // Add course to volunteer's enrolled courses
+    if (!volunteer.enrolledCourses.includes(courseId)) {
+      volunteer.enrolledCourses.push(courseId);
+      await volunteer.save();
+    }
+
+    // Add volunteer to course
+    if (!course.volunteers.includes(volunteer._id)) {
+      course.volunteers.push(volunteer._id);
+      await course.save();
+
+      // Add volunteer to chat room
+      if (!course.chatRoom.participants.includes(volunteer._id)) {
+        course.chatRoom.participants.push(volunteer._id);
+        await course.chatRoom.save();
+      }
+
+      // Notify participants via Socket.IO
+      io.to(course.chatRoom._id.toString()).emit("participantAdded", {
+        userId: volunteer._id,
+        name: volunteer.name,
+        role: "volunteer",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Volunteer added to the course and chat room successfully",
+      volunteerId: volunteer._id,
+      course,
+    });
+  } catch (error) {
+    console.error("Error adding volunteer:", error);
+    return res.status(500).json({
+      message: "An error occurred while adding the volunteer",
+      error: error.message,
+    });
+  }
+};
+
 export const addStudentToCourse = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -389,7 +480,6 @@ export const getStudentDetailsByCourseId = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 export const createAssignment = async (req, res) => {
   try {
@@ -697,6 +787,10 @@ export const getCourseDetailsById = async (req, res) => {
         path: 'enrolledStudentsRemoved',
         select: 'name email userType',
       })
+      .populate({
+        path: 'volunteers',
+        select: 'name email userType',
+      })
       .exec();
 
     if (!course) {
@@ -732,7 +826,7 @@ export const getCourseDetailsById = async (req, res) => {
       instructors: course.instructors,
       students,
       removedStudent: course.enrolledStudentsRemoved,
-      volunteers,
+      volunteers:course.volunteers,
     };
 
     // Send response
@@ -814,5 +908,39 @@ export const removeStudentFromCourse = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'An error occurred while processing the request' });
+  }
+};
+export const addAnnouncement = async (req, res) => {
+  try {
+    const { courseId } = req.params; // Get course ID from the route parameters
+    const { title, content } = req.body; // Get announcement details from the request body
+
+    // Validate input
+    if (!title || !content) {
+      return res.status(400).json({ success: false, message: "Title and content are required." });
+    }
+
+    // Find the course and add the announcement
+    const course = await CourseModel.findById(courseId);
+
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found." });
+    }
+
+    // Add the new announcement
+    const newAnnouncement = { title, content, createdAt: new Date() };
+    course.announcements.push(newAnnouncement);
+
+    // Save the updated course
+    await course.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Announcement added successfully.",
+      data: newAnnouncement,
+    });
+  } catch (error) {
+    console.error("Error adding announcement:", error);
+    return res.status(500).json({ success: false, message: "Internal server error." });
   }
 };

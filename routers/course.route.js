@@ -1,7 +1,9 @@
 import {
+  addAnnouncement,
   // addNote,
   addStudentToCourse,
   addTrainerToCourse,
+  addVolunteerToCourse,
   createAssignment,
   createCourse,
   getAssignmentById,
@@ -25,6 +27,7 @@ const router = express.Router();
 router.post("/create", createCourse);
 router.post("/courses/:courseId/trainers", addTrainerToCourse);
 router.post("/courses/:courseId/students", addStudentToCourse);
+router.post("/volunteer/:courseId", addVolunteerToCourse);
 router.patch("/:courseId/",updateCourseStatus)
 router.get("/courses/:id", getEnrolledCoursesByid);
 router.get("/:courseId", getChatRoomByCourseId);
@@ -42,4 +45,6 @@ router.get("/student-list/:courseId", getStudentDetailsByCourseId);
 router.post("/sessionadd/:courseId",updateSessionLink)
 router.get("/alldetails/:courseId",getCourseDetailsById)
 router.patch('/:courseId/students/:studentId',authenticateOrganization,removeStudentFromCourse)
+
+router.post("/announcement/:courseId",authenticateOrganization,addAnnouncement)
 export default router;
