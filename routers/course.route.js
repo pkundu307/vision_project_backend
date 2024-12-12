@@ -17,6 +17,7 @@ import {
   submitAssignment,
   updateCourseStatus,
   updateSessionLink,
+  getAnnouncementsByCourseId
 } from "../controllers/course.controller.js";
 import express from "express";
 import authenticateUser from "../middleware/authenticate.js";
@@ -47,4 +48,5 @@ router.get("/alldetails/:courseId",getCourseDetailsById)
 router.patch('/:courseId/students/:studentId',authenticateOrganization,removeStudentFromCourse)
 
 router.post("/announcement/:courseId",authenticateOrganization,addAnnouncement)
+router.get("/announcement/:courseId",getAnnouncementsByCourseId)
 export default router;

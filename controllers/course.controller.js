@@ -484,9 +484,7 @@ export const getStudentDetailsByCourseId = async (req, res) => {
 export const createAssignment = async (req, res) => {
   try {
     const { userType } = req.user;
-    console.log('====================================');
-    console.log(userType);
-    console.log('====================================');
+
 
     if (userType !== 'teacher' && userType !== 'volunteer') {
       return res.status(403).json({ message: 'Access denied. Only teachers or volunteers can create assignments.' });
@@ -942,5 +940,23 @@ export const addAnnouncement = async (req, res) => {
   } catch (error) {
     console.error("Error adding announcement:", error);
     return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+export const getAnnouncementsByCourseId = async (req, res) => {
+  const { courseId } = req.params;
+
+  try {
+    // Fetch the course by ID and project only the `announcements` field
+    const course = await CourseModel.findById(courseId, 'announcements');
+
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Return the announcements
+    res.status(200).json({ announcements: course.announcements });
+  } catch (error) {
+    console.error('Error fetching announcements:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };
