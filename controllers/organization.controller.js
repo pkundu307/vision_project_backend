@@ -423,24 +423,39 @@ export const addTodo = async (req, res) => {
 export const makeAnnouncement = async (req, res) => {
   try {
     const { announcement } = req.body;
+    const organizationId = req.organization._id;
 
     // Validate the input
     if (!announcement || typeof announcement !== "string") {
       return res.status(400).json({ message: "Invalid or missing 'announcement' in the request body." });
     }
 
-    // Add the announcement to the organization's announcements array
-    req.organization.announcements.push({ todoItem: announcement });
+    if (!organizationId) {
+      return res.status(400).json({ message: "Organization ID is required." });
+    }
 
+    // Fetch the organization
+    const organization = await OrganizationModel.findById(organizationId);
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found." });
+    }
+
+    // Ensure the plan is set
+    if (!organization.plan) {
+      return res.status(400).json({ message: "Organization plan is required." });
+    }
+
+    // Add the announcement to the organization's announcements array
+    organization.announcements.push({ todoItem: announcement });
     // Save the updated organization
-    await req.organization.save();
+    await organization.save();
 
     return res.status(200).json({
       message: "Announcement added successfully.",
       organization: {
-        id: req.organization._id,
-        name: req.organization.name,
-        announcements: req.organization.announcements, // Return the updated announcements list
+        id: organization._id,
+        name: organization.name,
+        announcements: organization.announcements, // Return the updated announcements list
       },
     });
   } catch (error) {
@@ -451,6 +466,8 @@ export const makeAnnouncement = async (req, res) => {
     });
   }
 };
+
+
 
 export const getAnnouncements = async (req, res) => {
   try {
@@ -492,7 +509,7 @@ export const getStudentsByOrganizationId = async (req, res) => {
     }
 
     // Find all courses offered by the organization
-    const courses = await CourseModel.find({ organization: organizationId }).populate("enrolledStudents", "name email");
+    const courses = await CourseModel.find({ organization: organizationId }).populate("enrolledStudents enrolledStudentsRemoved", "name email");
 
     // Extract enrolled students and include course names
     const studentsData = [];
@@ -564,5 +581,49 @@ export const getCourseAnnouncementsByOrganization = async (req, res) => {
   } catch (error) {
     console.error("Error fetching announcements:", error);
     return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+export const getTrainersByOrganizationId = async (req, res) => {
+  try {
+    const organizationId = req.organization._id;
+    // Validate if organization exists
+    const organization = await OrganizationModel.findById(organizationId);
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+
+    // Find all courses offered by the organization
+    const courses = await CourseModel.find({ organization: organizationId }).populate("instructors", "name email");
+
+    // Extract enrolled students and include course names
+    const trainsData = [];
+    courses.forEach((course) => {
+      course.instructors.forEach((trainer) => {
+        trainsData.push({
+          trainerId: trainer._id,
+          name: trainer.name,
+          email: trainer.email,
+          phone: trainer.phone,
+          courseName: course.courseName,
+        });
+      });
+    });
+
+    // Remove duplicates (in case a trainer is enrolled in multiple courses)
+    const uniqueTrainers = trainsData.filter(
+      (trainer, index, self) =>
+        index === self.findIndex((s) => s.trainerId.equals(trainer.trainerId) && s.courseName === trainer.courseName)
+    );
+
+    res.status(200).json({
+      organization: {
+        id: organization._id,
+        name: organization.name,
+      },
+      trainers: uniqueTrainers,
+    });
+  } catch (error) {
+    console.error("Error fetching trainers by organization ID:", error);
+    res.status(500).json({ message: "An error occurred while fetching trainers", error: error.message });
   }
 };

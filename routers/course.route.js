@@ -6,6 +6,7 @@ import {
   addVolunteerToCourse,
   createAssignment,
   createCourse,
+  getAnnouncements,
   getAssignmentById,
   getAssignmentsByCourseId,
   getChatRoomByCourseId,
@@ -47,4 +48,5 @@ router.get("/alldetails/:courseId",getCourseDetailsById)
 router.patch('/:courseId/students/:studentId',authenticateOrganization,removeStudentFromCourse)
 
 router.post("/announcement/:courseId",authenticateOrganization,addAnnouncement)
+router.get("/announcement/:courseId",authenticateOrganization,getAnnouncements)
 export default router;
