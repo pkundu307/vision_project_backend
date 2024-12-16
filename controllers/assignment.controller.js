@@ -6,7 +6,7 @@ import { AssignmentResponseModel } from "../models/user.schema.js";
 export const checkAssignmentAttendance = async (req, res) => {
   try {
    const {userId} = req.user;
-    console.log(userId);
+
     
     // Fetch the assignmentId from params
     const { assignmentId } = req.params;

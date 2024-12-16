@@ -66,12 +66,18 @@ const organizationSchema = new mongoose.Schema(
         },
       },
     ],
-    administrators: 
+    sessions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Session", // Reference to the Session schema
+      },
+    ],
+    administrators: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
       },
-    
+    ],
     establishedYear: {
       type: Number,
       min: 1900,

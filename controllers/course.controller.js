@@ -185,7 +185,7 @@ export const addVolunteerToCourse = async (req, res) => {
 
     // Extract body and params
     const { email, name } = req.body;
-    console.log(email,name);
+
     
     const { courseId } = req.params;
 
@@ -495,7 +495,7 @@ export const createAssignment = async (req, res) => {
     if (!courseId || !title || !deadline || !questions || questions.length === 0) {
       return res.status(400).json({ message: 'Missing required fields. Ensure courseId, title, deadline, and questions are provided.' });
     }
-    console.log(courseId);
+
     
     const course = await CourseModel.findById(courseId);
     if (!course) {
@@ -948,7 +948,7 @@ export const getAnnouncements = async (req, res) => {
 
     // Find the course by ID
     const course = await CourseModel.findById(courseId);
-    console.log(course);
+
     
     if (!course) {
       return res.status(404).json({ success: false, message: "Course not found." });

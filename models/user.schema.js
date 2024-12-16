@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 
 export const UserTypeEnum = {
   TEACHER: 'teacher',
-  ADMIN: 'admin',
+  SUBADMIN: 'subadmin',
   STUDENT: 'student',
   VOLENTEER: 'volunteer'
 };
@@ -74,6 +74,11 @@ const userSchema = new mongoose.Schema(
     otp_verified: {
       type: Boolean,
       default: false,
+    },
+    organization:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true,
     },
     assignmentSubmissions: [
       {

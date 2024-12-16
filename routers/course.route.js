@@ -18,7 +18,6 @@ import {
   submitAssignment,
   updateCourseStatus,
   updateSessionLink,
-  getAnnouncementsByCourseId
 } from "../controllers/course.controller.js";
 import express from "express";
 import authenticateUser from "../middleware/authenticate.js";

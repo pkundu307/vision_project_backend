@@ -72,8 +72,6 @@ export const register = async (req, res) => {
 // Login Controller
 export const login = async (req, res) => {
   const { email, password } = req.body;
-  console.log(email, password);
-  
 
   try {
     // Validate email and password
@@ -81,54 +79,83 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    // Check for regular user (student or teacher)
+    // Check for regular user (student, teacher, or subadmin)
     const user = await UserModel.findOne({ email });
     if (user) {
-      console.log(user);
-      
       // Compare the password with the stored hashed password
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
         return res.status(400).json({ message: "Invalid email or password" });
       }
 
-      // Retrieve the courses the user is enrolled in (if student) or instructing (if teacher)
-      let courses = [];
+      // Handle different user types
       if (user.userType === "student") {
-        courses = await CourseModel.find({ enrolledStudents: user._id }).populate("organization", "name");
+        const courses = await CourseModel.find({ enrolledStudents: user._id }).populate("organization", "name");
+        const token = generateToken(user._id, user.userType);
+
+        return res.status(200).json({
+          message: "Login successful",
+          token,
+          user: {
+            id: user._id,
+            email: user.email,
+            name: user.name,
+            userType: user.userType,
+            currentRole: user.currentRole,
+            collegeName: user.collegeName,
+          },
+          courses: courses.map((course) => ({
+            courseName: course.courseName,
+            description: course.description,
+            startDate: course.startDate,
+            endDate: course.endDate,
+            organization: course.organization.name,
+          })),
+        });
       } else if (user.userType === "teacher") {
-        courses = await CourseModel.find({ instructors: user._id }).populate("organization", "name");
+        const courses = await CourseModel.find({ instructors: user._id }).populate("organization", "name");
+        const token = generateToken(user._id, user.userType);
+
+        return res.status(200).json({
+          message: "Login successful",
+          token,
+          user: {
+            id: user._id,
+            email: user.email,
+            name: user.name,
+            userType: user.userType,
+          },
+          courses: courses.map((course) => ({
+            courseName: course.courseName,
+            description: course.description,
+            startDate: course.startDate,
+            endDate: course.endDate,
+            organization: course.organization.name,
+          })),
+        });
+      } else if (user.userType === "subadmin") {
+        const organization = await OrganizationModel.findById(user.organization);
+        if (!organization) {
+          return res.status(404).json({ message: "Associated organization not found." });
+        }
+
+        const token = generateToken(organization._id, "admin");
+        return res.status(200).json({
+          message: "Subadmin login successful",
+          token,
+          user: {
+            email: user.email,
+            name: user.name,
+            organizationName: organization.name,
+            userType: "subadmin",
+            organizationId: organization._id,
+          },
+        });
       }
-
-      // Generate JWT token for user
-      const token = generateToken(user._id, user.userType);
-
-      return res.status(200).json({
-        message: "Login successful",
-        token,
-        user: {
-          id:user._id,
-          email: user.email,
-          name: user.name,
-          userType: user.userType,
-          currentRole: user.currentRole,
-          collegeName: user.collegeName,
-        },
-        courses: courses.map((course) => ({
-          courseName: course.courseName,
-          description: course.description,
-          startDate: course.startDate,
-          endDate: course.endDate,
-          organization: course.organization.name,
-        })),
-      });
     }
 
-    // If not a regular user, check for admin in the Organization schema
+    // Check for admin in the Organization schema
     const organization = await OrganizationModel.findOne({ contactEmail: email });
-    console.log(organization);
-    
-
     if (organization) {
       // Compare the password with the stored hashed password
       const isMatch = await organization.comparePassword(password);
