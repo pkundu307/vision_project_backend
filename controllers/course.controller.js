@@ -156,6 +156,7 @@ export const addTrainerToCourse = async (req, res) => {
         userId: trainer._id,
         name: trainer.name,
         role: "trainer",
+        organization:organizationId
       });
     }
 
@@ -174,15 +175,20 @@ export const addTrainerToCourse = async (req, res) => {
 
 export const addVolunteerToCourse = async (req, res) => {
   try {
-    // Validate token
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
-      return res.status(401).json({ message: "Authorization token is required" });
+      return res
+        .status(401)
+        .json({ message: "Authorization token is required" });
     }
+// console.log(token);
 
     const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
+    console.log('====================================');
+    console.log(decoded);
+    console.log('====================================');
     const organizationId = decoded.userId;
-
+    
     // Extract body and params
     const { email, name } = req.body;
 
@@ -220,6 +226,7 @@ export const addVolunteerToCourse = async (req, res) => {
         password: hashedPassword,
         name,
         userType: "volunteer",
+        organization:organizationId
       });
       await volunteer.save();
     }
@@ -246,6 +253,7 @@ export const addVolunteerToCourse = async (req, res) => {
         userId: volunteer._id,
         name: volunteer.name,
         role: "volunteer",
+      
       });
     }
 
@@ -277,6 +285,7 @@ export const addStudentToCourse = async (req, res) => {
 
     const { email, name } = req.body;
     const { courseId } = req.params;
+    console.log(organizationId,',.,.,.,.,.,.,.,');
 
     if (!email || !name) {
       return res.status(400).json({ message: "Email and name are required" });
@@ -300,6 +309,7 @@ export const addStudentToCourse = async (req, res) => {
         password: defaultPassword,
         name,
         userType: "student",
+        organization:organizationId
       });
 
       student.enrolledCourses.push(courseId);

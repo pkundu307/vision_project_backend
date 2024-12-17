@@ -28,7 +28,7 @@ const router = express.Router();
 router.post("/create", createCourse);
 router.post("/courses/:courseId/trainers", addTrainerToCourse);
 router.post("/courses/:courseId/students", addStudentToCourse);
-router.post("/volunteer/:courseId", addVolunteerToCourse);
+router.post("/volunteer/:courseId",authenticateOrganization, addVolunteerToCourse);
 router.patch("/:courseId/",updateCourseStatus)
 router.get("/courses/:id", getEnrolledCoursesByid);
 router.get("/:courseId", getChatRoomByCourseId);

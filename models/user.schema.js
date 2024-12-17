@@ -76,7 +76,7 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     organization:{
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Organization',
       required: true,
     },

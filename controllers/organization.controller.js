@@ -312,17 +312,10 @@ export const getStatsByOrganization = async (req, res) => {
       return res.status(200).json({
         success: true,
         data: {
-          students: {
-            total: 0,
-            active: 0,
-            passout: 0,
-            newlyJoined: 0,
-          },
-          teachers: {
-            total: 0,
-            active: 0,
-            inactive: 0,
-          },
+          students: { total: 0, active: 0, passout: 0, newlyJoined: 0 },
+          teachers: { total: 0, active: 0, inactive: 0 },
+          volunteers: { total: 0 },
+          subadmins: { total: 0 },
         },
         message: "No courses found for the specified organization",
       });
@@ -331,8 +324,8 @@ export const getStatsByOrganization = async (req, res) => {
     // Extract course IDs
     const courseIds = courses.map((course) => course._id);
 
-    // Fetch students and teachers
-    const [students, teachers] = await Promise.all([
+    // Fetch users by roles
+    const [students, teachers, volunteers, subadmins] = await Promise.all([
       UserModel.find({
         userType: UserTypeEnum.STUDENT,
         enrolledCourses: { $in: courseIds },
@@ -340,6 +333,14 @@ export const getStatsByOrganization = async (req, res) => {
       UserModel.find({
         userType: UserTypeEnum.TEACHER,
         enrolledCourses: { $in: courseIds },
+      }),
+      UserModel.find({
+        userType: UserTypeEnum.VOLUNTEER,
+        organization: organizationId,
+      }),
+      UserModel.find({
+        userType: UserTypeEnum.SUBADMIN,
+        organization: organizationId,
       }),
     ]);
 
@@ -374,7 +375,6 @@ export const getStatsByOrganization = async (req, res) => {
     let activeTeachers = 0;
     let inactiveTeachers = 0;
 
-    // Categorize teachers based on the courses they are teaching
     for (const teacher of teachers) {
       let isActive = false;
       for (const courseId of teacher.enrolledCourses) {
@@ -409,6 +409,12 @@ export const getStatsByOrganization = async (req, res) => {
           active: activeTeachers,
           inactive: inactiveTeachers,
         },
+        volunteers: {
+          total: volunteers.length,
+        },
+        subadmins: {
+          total: subadmins.length,
+        },
       },
     });
   } catch (error) {
@@ -420,6 +426,7 @@ export const getStatsByOrganization = async (req, res) => {
     });
   }
 };
+
 
 export const addTodo = async (req, res) => {
   try {
