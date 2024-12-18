@@ -17,9 +17,7 @@ export const authenticateOrganization = async (req, res, next) => {
   try {
     // Verify the token
     const decoded = verifyToken(token);
-    console.log('====================================');
-    console.log(decoded);
-    console.log('====================================');
+
     // Check if the token corresponds to an admin userType
     if (decoded.userType !== "admin") {
       return res.status(403).json({ message: "Access denied. Not an admin user." });

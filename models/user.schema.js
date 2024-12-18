@@ -77,8 +77,8 @@ const userSchema = new mongoose.Schema(
     },
     organization:{
       type: String,
-      ref: 'Organization',
-      required: true,
+      
+   
     },
     assignmentSubmissions: [
       {
