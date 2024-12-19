@@ -45,7 +45,7 @@ const testSchema = new mongoose.Schema(
   
   export const TestModel = mongoose.model('Test', testSchema);
 
-  const questionSchema = new mongoose.Schema(
+  const testQuestionSchema = new mongoose.Schema(
     {
       assignmentId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -79,4 +79,89 @@ const testSchema = new mongoose.Schema(
     { timestamps: true }
   );
   
-  export const QuestionModel = mongoose.model('Question', questionSchema);
+  export const TestQuestionModel = mongoose.model('TestQuestion', testQuestionSchema);
+
+
+
+  const testResponseSchema = new mongoose.Schema(
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: function () {
+          return this.testType !== 'entrance test'; // `userId` is mandatory unless it's an entrance test
+        },
+      },
+      testId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Test',
+        required: true,
+      },
+      email:{
+        type: String,
+        required: function () {
+          return this.testType === 'entrance test'; // `email` is mandatory for entrance tests
+        },
+      },
+      courseId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course',
+        required: true,
+      },
+      testType: {
+        type: String,
+        enum: ['entrance test', 'regular test'],
+        required: true,
+      },
+      responses: [
+        {
+          questionId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TestQuestion',
+            required: true,
+          },
+          questionText: {
+            type: String,
+            required: true,
+          },
+          userAnswer: {
+            type: mongoose.Schema.Types.Mixed,
+            required: true,
+          },
+          correctAnswer: {
+            type: mongoose.Schema.Types.Mixed,
+            required: true,
+          },
+          marksObtained: {
+            type: Number,
+            default: 0,
+          },
+          isCorrect: {
+            type: Boolean,
+            default: false,
+          },
+        },
+      ],
+      totalMarksObtained: {
+        type: Number,
+        default: 0,
+      },
+      submissionTime: {
+        type: Date,
+        default: Date.now,
+      },
+      status: {
+        type: String,
+        enum: ['submitted', 'graded', 'pending'],
+        default: 'submitted',
+      },
+      feedback: {
+        type: String,
+        default: '',
+      },
+    },
+    { timestamps: true }
+  );
+  
+  export const TestResponseModel = mongoose.model('TestResponse', testResponseSchema);
+  

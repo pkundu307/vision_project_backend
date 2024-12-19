@@ -16,7 +16,7 @@ import chatRouter from './routers/chatRoute.js'
 import notesRouter from './routers/notes.route.js';
 import cookieParser from "cookie-parser";
 import { ExpressPeerServer } from 'peer';
-
+import testRouter from "./routers/test.route.js"
 
 
 // Load environment variables
@@ -115,6 +115,7 @@ app.use('/api/course', courseRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/assignment', assignmentRouter);
 app.use('/api/notes', notesRouter);
+app.use('/api/test', testRouter);
 // MongoDB Connection
 mongoose
   .connect("mongodb://localhost:27017/vision")

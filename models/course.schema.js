@@ -142,6 +142,12 @@ const courseSchema = new mongoose.Schema(
         ref: 'Assignment', // Reference the Assignment schema
       },
     ],
+    tests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Test', // Reference the Test schema
+      },
+    ],
   },
   { timestamps: true }
 );
