@@ -184,9 +184,7 @@ export const addVolunteerToCourse = async (req, res) => {
 // console.log(token);
 
     const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
-    console.log('====================================');
-    console.log(decoded);
-    console.log('====================================');
+
     const organizationId = decoded.userId;
     
     // Extract body and params
@@ -285,7 +283,7 @@ export const addStudentToCourse = async (req, res) => {
 
     const { email, name } = req.body;
     const { courseId } = req.params;
-    console.log(organizationId,',.,.,.,.,.,.,.,');
+
 
     if (!email || !name) {
       return res.status(400).json({ message: "Email and name are required" });

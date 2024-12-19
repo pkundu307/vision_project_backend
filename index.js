@@ -13,6 +13,7 @@ import courseRouter from './routers/course.route.js';
 import assignmentRouter from './routers/assignment.route.js';
 import { ChatMessageModel } from './models/chatmessage.schema.js';
 import chatRouter from './routers/chatRoute.js'
+import notesRouter from './routers/notes.route.js';
 import cookieParser from "cookie-parser";
 import { ExpressPeerServer } from 'peer';
 
@@ -113,6 +114,7 @@ app.use('/api/organization', organizationRouter);
 app.use('/api/course', courseRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/assignment', assignmentRouter);
+app.use('/api/notes', notesRouter);
 // MongoDB Connection
 mongoose
   .connect("mongodb://localhost:27017/vision")
