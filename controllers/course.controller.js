@@ -284,7 +284,6 @@ export const addStudentToCourse = async (req, res) => {
     const { email, name } = req.body;
     const { courseId } = req.params;
 
-
     if (!email || !name) {
       return res.status(400).json({ message: "Email and name are required" });
     }
@@ -301,35 +300,41 @@ export const addStudentToCourse = async (req, res) => {
 
     let student = await UserModel.findOne({ email });
     if (!student) {
+      // Create a new student if they do not exist
       const defaultPassword = "student123";
       student = new UserModel({
         email,
         password: defaultPassword,
         name,
         userType: "student",
-        organization:organizationId
+        organization: organizationId,
       });
-
       student.enrolledCourses.push(courseId);
       await student.save();
+    } else if (student.enrolledCourses.includes(courseId)) {
+      // Handle duplicate course enrollment
+      return res.status(400).json({
+        message: `Student with email ${email} is already enrolled in this course.`,
+      });
     }
 
+    // Add the student to the course if not already enrolled
     if (!course.enrolledStudents.includes(student._id)) {
       course.enrolledStudents.push(student._id);
       await course.save();
 
-      // Add student to chat room
+      // Add the student to the chat room if not already a participant
       if (!course.chatRoom.participants.includes(student._id)) {
         course.chatRoom.participants.push(student._id);
         await course.chatRoom.save();
-      }
 
-      // Notify other participants via Socket.IO
-      io.to(course.chatRoom._id.toString()).emit("participantAdded", {
-        userId: student._id,
-        name: student.name,
-        role: "student",
-      });
+        // Notify other participants via Socket.IO
+        io.to(course.chatRoom._id.toString()).emit("participantAdded", {
+          userId: student._id,
+          name: student.name,
+          role: "student",
+        });
+      }
     }
 
     return res.status(200).json({
@@ -340,6 +345,107 @@ export const addStudentToCourse = async (req, res) => {
     console.error("Error adding student:", error);
     return res.status(500).json({
       message: "An error occurred while adding the student",
+      error: error.message,
+    });
+  }
+};
+export const enrollMultipleStudents = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Authorization token is required" });
+    }
+
+    const decoded = jwt.verify(token, "pkpkpkpkpkpkpkpkpkpkpk");
+    const organizationId = decoded.userId;
+
+    const { students } = req.body; // Array of student objects { email: string, name?: string }
+    const { courseId } = req.params;
+    console.log(courseId,students);
+
+    if (!students || !Array.isArray(students) || students.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "An array of students is required" });
+    }
+
+    const course = await CourseModel.findOne({
+      _id: courseId,
+      organization: organizationId,
+    }).populate("chatRoom");
+    if (!course) {
+      return res.status(404).json({
+        message: "Course not found or does not belong to the organization",
+      });
+    }
+
+    const addedStudents = [];
+    const skippedStudents = [];
+
+    for (const studentData of students) {
+      const email = studentData.email;
+      const name = studentData.name || "Student XYZ";
+
+      if (!email) {
+        skippedStudents.push({ email: null, reason: "Email is required" });
+        continue;
+      }
+
+      let student = await UserModel.findOne({ email });
+
+      if (!student) {
+        // Create a new student if they do not exist
+        const defaultPassword = "student123";
+        student = new UserModel({
+          email,
+          password: defaultPassword,
+          name,
+          userType: "student",
+          organization: organizationId,
+        });
+        student.enrolledCourses.push(courseId);
+        await student.save();
+      } else if (student.enrolledCourses.includes(courseId)) {
+        // Skip if the student is already enrolled
+        skippedStudents.push({ email, reason: "Already enrolled in this course" });
+        continue;
+      }
+
+      // Add the student to the course if not already enrolled
+      course.enrolledStudents.push(student._id);
+
+      // Add the student to the chat room if not already a participant
+      if (!course.chatRoom.participants.includes(student._id)) {
+        course.chatRoom.participants.push(student._id);
+      }
+
+      addedStudents.push({ email, name });
+    }
+
+    // Save the course and chat room updates
+    await course.save();
+    await course.chatRoom.save();
+
+    // Notify other participants via Socket.IO for each added student
+    addedStudents.forEach((student) => {
+      io.to(course.chatRoom._id.toString()).emit("participantAdded", {
+        userId: student._id,
+        name: student.name,
+        role: "student",
+      });
+    });
+
+    return res.status(200).json({
+      message: "Students processed successfully",
+      addedStudents,
+      skippedStudents,
+    });
+  } catch (error) {
+    console.error("Error enrolling multiple students:", error);
+    return res.status(500).json({
+      message: "An error occurred while enrolling students",
       error: error.message,
     });
   }
@@ -498,7 +604,7 @@ export const createAssignment = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Only teachers or volunteers can create assignments.' });
     }
     
-    const { courseId, title, description, deadline, questions } = req.body;
+    const { courseId, title, description, deadline, questions,type } = req.body;
 
     if (!courseId || !title || !deadline || !questions || questions.length === 0) {
       return res.status(400).json({ message: 'Missing required fields. Ensure courseId, title, deadline, and questions are provided.' });
@@ -524,6 +630,7 @@ export const createAssignment = async (req, res) => {
     const totalMarks = createdQuestions.reduce((sum, question) => sum + question.marks, 0);
 
     const newAssignment = new AssignmentModel({
+      type:type,
       courseId,
       title,
       description,

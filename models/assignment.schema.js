@@ -3,6 +3,11 @@ import mongoose from "mongoose";
 
 const assignmentSchema = new mongoose.Schema(
     {
+      type:{
+        type:String,
+        enum: ['mcq', 'short'],
+        required: true,
+      },
       courseId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course', 

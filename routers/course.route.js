@@ -6,6 +6,7 @@ import {
   addVolunteerToCourse,
   createAssignment,
   createCourse,
+  enrollMultipleStudents,
   getAnnouncements,
   getAssignmentById,
   getAssignmentsByCourseId,
@@ -28,6 +29,7 @@ const router = express.Router();
 router.post("/create", createCourse);
 router.post("/courses/:courseId/trainers", addTrainerToCourse);
 router.post("/courses/:courseId/students", addStudentToCourse);
+router.post("/many/courses/:courseId/students", enrollMultipleStudents);
 router.post("/volunteer/:courseId",authenticateOrganization, addVolunteerToCourse);
 router.patch("/:courseId/",updateCourseStatus)
 router.get("/courses/:id", getEnrolledCoursesByid);

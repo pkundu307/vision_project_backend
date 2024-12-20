@@ -108,7 +108,7 @@ export const addTestToCourse = async (req, res) => {
 
   export const submitTest = async (req, res) => {
     try {
-      const { testId, userId, responses,email } = req.body;
+      const { testId, userId, responses,email,type } = req.body;
   
       // Validate test existence
       const test = await TestModel.findById(testId).populate('questions');
@@ -158,6 +158,7 @@ export const addTestToCourse = async (req, res) => {
         totalMarksObtained,
         submissionTime: new Date(),
         status: 'submitted',
+        type:type
       });
   
       const savedResponse = await testResponse.save();
@@ -175,24 +176,25 @@ export const addTestToCourse = async (req, res) => {
     try {
       const { courseId } = req.params;
   
-      // Fetch responses by courseId
-      const responses = await TestResponseModel.find({ courseId })
-        .populate('userId', 'name email') // Populate user details
-        .populate('testId', 'title'); // Populate test details
+      // Fetch responses filtered by courseId and testType "entrance-test"
+      const responses = await TestResponseModel.find({ courseId, testType: "entrance-test" })
+        .populate("userId", "name email") // Populate user details
+        .populate("testId", "title"); // Populate test details
   
       if (!responses || responses.length === 0) {
-        return res.status(404).json({ message: 'No responses found for this course' });
+        return res.status(404).json({ message: "No entrance test responses found for this course" });
       }
   
       return res.status(200).json({
-        message: 'Responses fetched successfully',
+        message: "Entrance test responses fetched successfully",
         responses,
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ error: 'An error occurred while fetching responses' });
+      return res.status(500).json({ error: "An error occurred while fetching entrance test responses" });
     }
   };
+  
   
   export const getResponsesByUserId = async (req, res) => {
     try {
