@@ -1,4 +1,4 @@
-import { TestModel, TestQuestionModel } from "../models/test.schema.js";
+import { TestModel, TestQuestionModel, TestResponseModel } from "../models/test.schema.js";
 import { CourseModel } from '../models/course.schema.js';
 
 
@@ -108,7 +108,7 @@ export const addTestToCourse = async (req, res) => {
 
   export const submitTest = async (req, res) => {
     try {
-      const { testId, userId, responses } = req.body;
+      const { testId, userId, responses,email } = req.body;
   
       // Validate test existence
       const test = await TestModel.findById(testId).populate('questions');
@@ -151,6 +151,7 @@ export const addTestToCourse = async (req, res) => {
       const testResponse = new TestResponseModel({
         userId: testType === 'entrance test' ? null : userId, // Set userId only for regular tests
         testId,
+        email,
         courseId: test.course,
         testType,
         responses: processedResponses,
