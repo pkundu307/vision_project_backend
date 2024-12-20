@@ -3,7 +3,7 @@ const testSchema = new mongoose.Schema(
     {
       type: {
         type: String,
-        enum: ['entrance test', 'regular test'], // Defines the type of test
+        enum: ['entrance-test', 'regular-test'], // Defines the type of test
         required: true,
       },
       title: {
@@ -30,7 +30,7 @@ const testSchema = new mongoose.Schema(
       questions: [
         {
           type: mongoose.Schema.Types.ObjectId,
-          ref: 'Question', // Reference the Question schema
+          ref: 'TestQuestion', // Reference the Question schema
           required: true,
         },
       ],
@@ -89,7 +89,7 @@ const testSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: function () {
-          return this.testType !== 'entrance test'; // `userId` is mandatory unless it's an entrance test
+          return this.testType !== 'entrance-test'; // `userId` is mandatory unless it's an entrance test
         },
       },
       testId: {
@@ -100,7 +100,7 @@ const testSchema = new mongoose.Schema(
       email:{
         type: String,
         required: function () {
-          return this.testType === 'entrance test'; // `email` is mandatory for entrance tests
+          return this.testType === 'entrance-test'; // `email` is mandatory for entrance tests
         },
       },
       courseId: {
@@ -110,7 +110,7 @@ const testSchema = new mongoose.Schema(
       },
       testType: {
         type: String,
-        enum: ['entrance test', 'regular test'],
+        enum: ['entrance-test', 'regular-test'],
         required: true,
       },
       responses: [

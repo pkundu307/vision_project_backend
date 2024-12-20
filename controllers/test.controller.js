@@ -6,7 +6,8 @@ import { CourseModel } from '../models/course.schema.js';
 export const addTestToCourse = async (req, res) => {
     try {
       const { courseId, type, title, description, timeLimit, deadline, questions, totalMarks } = req.body;
-  
+      console.log(courseId, type, title, description, timeLimit, deadline);
+      
       // Validate course existence
       const course = await CourseModel.findById(courseId);
       if (!course) {
@@ -69,7 +70,7 @@ export const addTestToCourse = async (req, res) => {
       const { courseId } = req.params;
   
       // Find all tests linked to the courseId
-      const tests = await TestModel.find({ course: courseId }).populate('questions');
+      const tests = await TestModel.find({ course: courseId }).populate({ path: 'questions', select: '-correctAnswer -__v'});
   
       if (!tests || tests.length === 0) {
         return res.status(404).json({ message: 'No tests found for this course' });
@@ -87,8 +88,13 @@ export const addTestToCourse = async (req, res) => {
       const { courseId, testId } = req.params;
   
       // Find the test by testId and ensure it belongs to the courseId
-      const test = await TestModel.findOne({ _id: testId, course: courseId }).populate('questions');
-  
+      const test = await TestModel.findOne({ _id: testId, course: courseId }).populate({
+        path: 'questions',
+        select: '-correctAnswer' // Exclude the correctAnswer field
+      });
+
+      
+        
       if (!test) {
         return res.status(404).json({ message: 'Test not found for the given course' });
       }
@@ -209,3 +215,39 @@ export const addTestToCourse = async (req, res) => {
       return res.status(500).json({ error: 'An error occurred while fetching responses' });
     }
   };
+
+  export const deleteTestByIdAndCourseId = async (req, res) => {
+    try {
+      const { courseId, testId } = req.params;
+  
+      // Find the course to ensure it exists
+      const course = await CourseModel.findById(courseId);
+      if (!course) {
+        return res.status(404).json({ error: 'Course not found' });
+      }
+  
+      // Find the test to ensure it exists and belongs to the course
+      const test = await TestModel.findOne({ _id: testId, course: courseId });
+      if (!test) {
+        return res.status(404).json({ error: 'Test not found for the given course' });
+      }
+  
+      // Remove the test ID from the course's tests array
+      course.tests = course.tests.filter(testIdInCourse => testIdInCourse.toString() !== testId);
+      await course.save();
+  
+      // Delete the test from the database
+      await TestModel.deleteOne({ _id: testId });
+  
+      // Delete the associated questions for the test
+      await TestQuestionModel.deleteMany({ _id: { $in: test.questions } });
+  
+      return res.status(200).json({
+        message: 'Test and associated questions deleted successfully',
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'An error occurred while deleting the test' });
+    }
+  };
+  
